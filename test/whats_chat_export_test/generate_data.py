@@ -5,7 +5,7 @@ from pathlib import Path
 # ----------------------
 # Configuration
 # ----------------------
-output_folder = Path("./test_whatsapp_export")  # where the export will go
+output_folder = Path("./testset_whatsapp_export")  # where the export will go
 txt_file_name = "WhatsApp Chat with TestUser.txt"
 media_folder_name = "Media"
 num_messages = 15000  # adjust for testing lazy loading / search

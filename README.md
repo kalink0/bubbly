@@ -2,7 +2,7 @@ Bubbly – Bubble your chats
 
 ## Overview
 
-`bubbly_launcher.py` parses chat exports and generates an HTML report with search, filters, time filtering, and media previews. It currently supports WhatsApp chat exports (iOS and Android).
+Bubbly parses generates an HTML report with search, filters, time filtering, and media previews in bubble view for chats from different messengers/exports. It currently supports WhatsApp chat exports (iOS and Android).
 
 ## Usage
 

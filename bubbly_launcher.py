@@ -1,9 +1,9 @@
 import argparse
 import json
 from pathlib import Path
-from bubbly.exporter import BubblyExporter
-from bubbly.parsers.whatsapp_chat_export import WhatsAppChatExportParser
-from bubbly.utils import prepare_input_generic 
+from exporter import BubblyExporter
+from parsers.whatsapp_chat_export import WhatsAppChatExportParser
+from utils import prepare_input_generic 
 
 
 BUBBLY_VERSION = "0.1"
