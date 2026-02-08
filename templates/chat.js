@@ -79,6 +79,20 @@ document.addEventListener("DOMContentLoaded", () => {
             return new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min)).getTime();
         }
 
+        // Telegram JSON: "YYYY-MM-DDTHH:MM:SS" or "YYYY-MM-DD HH:MM:SS"
+        match = text.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+        if (match) {
+            const [, yyyy, mm, dd, hh, min, sec] = match;
+            return new Date(
+                Number(yyyy),
+                Number(mm) - 1,
+                Number(dd),
+                Number(hh),
+                Number(min),
+                Number(sec || 0)
+            ).getTime();
+        }
+
         return null;
     }
 

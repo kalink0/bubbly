@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from exporter import BubblyExporter
 from parsers.whatsapp_chat_export import WhatsAppChatExportParser
+from parsers.telegram_desktop_chat_export import TelegramDesktopChatExportParser
 from utils import prepare_input_generic 
 
 
@@ -31,7 +32,7 @@ def print_banner():
 # ----------------------
 PARSERS = {
     "whatsapp_export": WhatsAppChatExportParser,
-    # Add future parsers here
+    "telegram_desktop_export": TelegramDesktopChatExportParser,
 }
 
 # ----------------------

@@ -2,7 +2,7 @@ Bubbly – Bubble your chats
 
 ## Overview
 
-Bubbly parses generates an HTML report with search, filters, time filtering, and media previews in bubble view for chats from different messengers/exports. It currently supports WhatsApp chat exports (iOS and Android).
+Bubbly parses generates an HTML report with search, filters, time filtering, and media previews in bubble view for chats from different messengers/exports. It currently supports WhatsApp chat exports (iOS and Android) and Telegram Desktop exports (JSON).
 
 ## Usage
 
@@ -46,5 +46,7 @@ Example config:
 ```
 
 Notes:
-- `--parser` must be one of: `whatsapp_export`.
-- `extra_args` are parser-specific. For WhatsApp Chat Exports they include: `platform`, `wa_account_name`, `wa_account_number`, `is_group_chat`, `chat_name`.
+- `--parser` must be one of: `whatsapp_export`, `telegram_desktop_export`.
+- `extra_args` are parser-specific.
+  - For WhatsApp Chat Exports: `platform`, `wa_account_name`, `wa_account_number`, `is_group_chat`, `chat_name`.
+  - For Telegram Desktop exports (JSON): `tg_account_name`, `chat_name`, `is_group_chat` (optional override).

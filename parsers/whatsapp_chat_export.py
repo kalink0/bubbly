@@ -1,3 +1,11 @@
+"""
+WhatsApp Chat Export Parser
+
+Created: 2026-02-08
+Author: Kalink0
+Description: Creates Bubbly JSON from WhatsApp iOS/Android chat exports.
+"""
+
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 import re
@@ -7,10 +15,6 @@ class WhatsAppChatExportParser:
     """
     Parser for WhatsApp chat exports (iOS + Android)
     """
-
-    # ----------------------
-    # Public method
-    # ----------------------
     def parse(
         self,
         input_folder: Path,
@@ -54,10 +58,11 @@ class WhatsAppChatExportParser:
 
         return messages, metadata
 
-    # ----------------------
-    # iOS parser
-    # ----------------------
+
     def _parse_ios(self, input_folder: Path) -> List[Dict]:
+        '''
+        Parse data from iOS Chat export
+        '''
         # Find TXT file
         txt_files = list(input_folder.glob("*.txt"))
         if not txt_files:
