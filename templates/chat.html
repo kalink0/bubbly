@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chat Export</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Header placeholder -->
+<div id="header">
+  <button id="toggleHeaderBtn" style="margin-bottom:10px;">Toggle Header</button>
+  <div id="headerContent">
+    {{header}}
+  </div>
+</div>
+
+<!-- Search box -->
+<div style="max-width: 800px; margin: auto; margin-bottom: 10px;">
+  <input type="text" id="searchBox" placeholder="Search messages..." style="width:100%; padding:8px;">
+</div>
+
+<!-- Counts -->
+<div style="max-width: 800px; margin: auto; margin-bottom: 10px;">
+  <span id="messageCount">Showing 0 of 0 messages</span>
+</div>
+
+<!-- Filters -->
+<div style="max-width: 800px; margin: auto; margin-bottom: 10px;">
+  <label>Sender:
+    <select id="senderFilter">
+      <option value="">All</option>
+    </select>
+  </label>
+  <label>Media type:
+    <select id="mediaFilter">
+      <option value="">All</option>
+      <option value="image">Image</option>
+      <option value="video">Video</option>
+      <option value="audio">Audio</option>
+      <option value="pdf">PDF</option>
+    </select>
+  </label>
+  <label>Time:
+    <select id="timePreset">
+      <option value="">All time</option>
+      <option value="last24h">Last 24 hours</option>
+      <option value="last30d">Last 30 days</option>
+      <option value="custom">Custom range</option>
+    </select>
+  </label>
+  <span id="timeRange" style="display:none;">
+    <label>From:
+      <input type="datetime-local" id="timeFrom">
+    </label>
+    <label>To:
+      <input type="datetime-local" id="timeTo">
+    </label>
+  </span>
+</div>
+
+<!-- Chat container -->
+<div id="chat" class="chat"></div>
+
+
+
+<!-- Embedded messages JSON -->
+<script>
+const messages = {{messages_json_content}};
+</script>
+
+<!-- Lazy-load + search JS -->
+<script src="chat.js"></script>
+</body>
+</html>
