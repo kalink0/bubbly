@@ -26,22 +26,21 @@
 </div>
 
 <!-- Filters -->
-<div style="max-width: 800px; margin: auto; margin-bottom: 10px;">
-  <label>Sender:
-    <select id="senderFilter">
-      <option value="">All</option>
-    </select>
+<div class="filters-row">
+  <label class="filter-item">
+    <span class="filter-label">Chat:</span>
+    <div id="chatFilter" class="single-select"></div>
   </label>
-  <label>Media type:
-    <select id="mediaFilter">
-      <option value="">All</option>
-      <option value="image">Image</option>
-      <option value="video">Video</option>
-      <option value="audio">Audio</option>
-      <option value="pdf">PDF</option>
-    </select>
+  <label class="filter-item">
+    <span class="filter-label">Sender:</span>
+    <div id="senderFilter" class="multi-select"></div>
   </label>
-  <label>Time:
+  <label class="filter-item">
+    <span class="filter-label">Media type:</span>
+    <div id="mediaFilter" class="multi-select"></div>
+  </label>
+  <label class="filter-item">
+    <span class="filter-label">Time:</span>
     <select id="timePreset">
       <option value="">All time</option>
       <option value="last24h">Last 24 hours</option>
@@ -50,10 +49,12 @@
     </select>
   </label>
   <span id="timeRange" style="display:none;">
-    <label>From:
+    <label class="filter-item">
+      <span class="filter-label">From:</span>
       <input type="datetime-local" id="timeFrom">
     </label>
-    <label>To:
+    <label class="filter-item">
+      <span class="filter-label">To:</span>
       <input type="datetime-local" id="timeTo">
     </label>
   </span>

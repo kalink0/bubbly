@@ -15,14 +15,21 @@ class WhatsAppChatExportParser:
     """
     Parser for WhatsApp chat exports (iOS + Android)
     """
+    EXTRA_ARGS = {
+        "platform": "Required. 'ios' or 'android'.",
+        "wa_account_name": "Optional. Account display name for is_owner detection.",
+        "wa_account_number": "Optional. Account phone number (string).",
+        "is_group_chat": "Optional. true or false. Default: false.",
+        "chat_name": "Optional. Overrides chat name in report header.",
+    }
     def parse(
         self,
         input_folder: Path,
         media_folder: Path,
         platform: str,
-        wa_account_name: str,
-        wa_account_number: str,
-        is_group_chat: bool,
+        wa_account_name: str = "",
+        wa_account_number: str = "",
+        is_group_chat: bool = False,
         **kwargs
     ) -> Tuple[List[Dict], Dict]:
         """
@@ -40,9 +47,11 @@ class WhatsAppChatExportParser:
         else:
             raise ValueError(f"Unsupported platform: {platform}")
 
+        chat_name = kwargs.get("chat_name")
         # Determine is_owner for each message
         for msg in messages:
             msg["is_owner"] = msg["sender"] == wa_account_name
+            msg["chat"] = chat_name
 
         # Build metadata for header
         metadata = {

@@ -1,4 +1,156 @@
 body { font-family: Arial, sans-serif; background: #f0f0f0; }
+select[multiple] {
+    min-width: 160px;
+}
+.filters-row {
+    max-width: 800px;
+    margin: auto;
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: center;
+}
+.filter-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.filter-label {
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+.multi-select {
+    display: inline-block;
+    position: relative;
+    min-width: 200px;
+    vertical-align: middle;
+}
+.single-select {
+    display: inline-block;
+    position: relative;
+    min-width: 200px;
+    vertical-align: middle;
+}
+.multi-select__button {
+    width: 100%;
+    text-align: left;
+    padding: 6px 8px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+.multi-select__panel {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 6px);
+    width: 260px;
+    max-height: 260px;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    display: none;
+    z-index: 10;
+}
+.multi-select.open .multi-select__panel {
+    display: block;
+}
+.single-select.open .multi-select__panel {
+    display: block;
+}
+.multi-select__search {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 0.9em;
+}
+.multi-select__option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 2px;
+    font-size: 0.9em;
+}
+.multi-select__option input {
+    margin: 0;
+}
+.multi-select__bulk {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.multi-select__bulk-btn {
+    border: 1px solid #ccc;
+    background: #f7f7f7;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 0.8em;
+    cursor: pointer;
+}
+.multi-select__bulk-btn:hover {
+    background: #eee;
+}
+.report-header {
+    max-width: 800px;
+    margin: 0 auto 12px auto;
+    padding: 10px 12px;
+    background: #ddd;
+    border-radius: 10px;
+}
+.report-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+}
+.report-item {
+    background: #f6f6f6;
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+.report-label {
+    font-size: 0.8em;
+    color: #444;
+    font-weight: 600;
+}
+.report-value {
+    font-size: 0.95em;
+    color: #111;
+    word-break: break-word;
+}
+.report-value:empty::before {
+    content: "—";
+    color: #777;
+}
+@media (max-width: 700px) {
+    .report-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.chat-tag {
+    display: inline-block;
+    margin: 0 0 4px 0;
+    padding: 2px 6px;
+    font-size: 0.75em;
+    background: #d8e8f8;
+    color: #234;
+    border-radius: 8px;
+}
+.media-missing {
+    margin-top: 6px;
+    padding: 4px 6px;
+    font-size: 0.75em;
+    background: #ffe0e0;
+    color: #7a1f1f;
+    border-radius: 6px;
+    display: inline-block;
+}
 .chat { max-width: 800px; margin: auto; padding: 20px; }
 .bubble { padding: 10px 15px; margin: 5px 0; border-radius: 15px; display: inline-block; max-width: 70%; }
 .timestamp { font-size: 0.8em; color: #666; margin-top: 5px; }

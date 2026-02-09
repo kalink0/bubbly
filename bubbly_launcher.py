@@ -1,9 +1,13 @@
 import argparse
 import json
+import re
+import sys
+from datetime import datetime
 from pathlib import Path
 from exporter import BubblyExporter
 from parsers.whatsapp_chat_export import WhatsAppChatExportParser
 from parsers.telegram_desktop_chat_export import TelegramDesktopChatExportParser
+from parsers.wire_messenger_backup import WireMessengerBackupParser
 from utils import prepare_input_generic 
 
 
@@ -33,6 +37,7 @@ def print_banner():
 PARSERS = {
     "whatsapp_export": WhatsAppChatExportParser,
     "telegram_desktop_export": TelegramDesktopChatExportParser,
+    "wire_messenger_backup": WireMessengerBackupParser,
 }
 
 # ----------------------
@@ -78,19 +83,47 @@ def apply_config(parser, config):
 def parse_args():
     parser = argparse.ArgumentParser(description="Bubbly Launcher - Chat Export Viewer")
     parser.add_argument("--config", help="Path to JSON config file")
-    parser.add_argument("--parser", help=f"Parser name. Available: {list(PARSERS.keys())}")
+    parser.add_argument("--parser", help="Parser name")
     parser.add_argument("--input", help="Input file/folder/zip")
     parser.add_argument("--output", help="Output folder for HTML report")
     parser.add_argument("--creator", help="User generating the report")
     parser.add_argument("--case", help="Case number")
     parser.add_argument("--templates_folder", help="Path to templates folder")
     parser.add_argument("--extra_args", nargs="*", help="Parser-specific args as key=value pairs")
+    parser.add_argument(
+        "--show_parser_args",
+        action="store_true",
+        help="Show extra args supported by the selected parser and exit",
+    )
+
+    if len(sys.argv) == 1 or "-h" in sys.argv:
+        print("Available parsers:")
+        for name in PARSERS.keys():
+            print(f" - {name}")
+        print()
+        parser.print_help()
+        raise SystemExit(0)
 
     partial_args, _ = parser.parse_known_args()
     config = load_config(partial_args.config)
     apply_config(parser, config)
     args = parser.parse_args()
     args._config = config
+
+    if args.show_parser_args:
+        if not args.parser:
+            parser.error("--show_parser_args requires --parser")
+        parser_class = PARSERS.get(args.parser)
+        if not parser_class:
+            parser.error(f"Unknown parser {args.parser}. Available: {list(PARSERS.keys())}")
+        extra_args = getattr(parser_class, "EXTRA_ARGS", {})
+        print(f"Extra args for parser '{args.parser}':")
+        if not extra_args:
+            print(" (none)")
+        else:
+            for key, description in extra_args.items():
+                print(f" - {key}: {description}")
+        raise SystemExit(0)
 
     missing = [
         name
@@ -155,8 +188,14 @@ def main():
     messages, metadata = parser_instance.parse(input_path, media_folder, **extra_kwargs)
 
     # Export HTML
-    exporter = BubblyExporter(messages, media_folder, args.output, metadata, templates_folder=args.templates_folder)
-    exporter.export_html()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_folder = Path(args.output) / f"bubbly_{timestamp}"
+    safe_case = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(args.case)).strip("._-")
+    if not safe_case:
+        safe_case = "case"
+    output_html_name = f"{safe_case}_report.html"
+    exporter = BubblyExporter(messages, media_folder, output_folder, metadata, templates_folder=args.templates_folder)
+    exporter.export_html(output_html_name=output_html_name)
 
 if __name__ == "__main__":
     main()

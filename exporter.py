@@ -44,13 +44,15 @@ class BubblyExporter:
         json_path = self.output_folder / "chat.json"
         messages_json = []
         for msg in self.messages:
+            chat_name = msg.get("chat") or self.metadata.get("chat_name")
             messages_json.append({
                 "sender": msg["sender"],
                 "content": msg["content"],
                 "timestamp": msg["timestamp"],
                 "media": msg.get("media"),
                 "is_owner": msg.get("is_owner"),
-                "is_group_chat": self.metadata.get("is_group_chat", False)
+                "is_group_chat": self.metadata.get("is_group_chat", False),
+                "chat": chat_name
             })
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(messages_json, f, ensure_ascii=False, indent=2)
@@ -77,18 +79,20 @@ class BubblyExporter:
             ("WhatsApp account name", meta.get("wa_account_name")),
             ("WhatsApp account number", meta.get("wa_account_number")),
             ("Telegram account name", meta.get("tg_account_name")),
+            ("Wire account name", meta.get("wire_account_name")),
             ("Group chat", meta.get("is_group_chat")),
             ("Platform", meta.get("platform")),
             ("Media files copied", copied_count),
         ]
-        header_html = [
-            '<div class="report-header" style="padding:10px; margin-bottom:20px; background:#ddd; border-radius:10px;">'
-        ]
+        header_html = ['<div class="report-header"><div class="report-grid">']
         for label, value in header_lines:
             if value is None:
                 continue
-            header_html.append(f"<p><strong>{label}:</strong> {value}</p>")
-        header_html.append("</div>")
+            header_html.append(
+                f"<div class=\"report-item\"><div class=\"report-label\">{label}</div>"
+                f"<div class=\"report-value\">{value}</div></div>"
+            )
+        header_html.append("</div></div>")
         header_html = "\n".join(header_html)
 
         # ----------------------
@@ -101,6 +105,13 @@ class BubblyExporter:
         # ----------------------
         # Inline CSS & JS
         # ----------------------
+        messages_for_html = []
+        for msg in self.messages:
+            chat_name = msg.get("chat") or self.metadata.get("chat_name")
+            enriched = dict(msg)
+            enriched["chat"] = chat_name
+            messages_for_html.append(enriched)
+
         html_content = html_template.replace(
             '<link rel="stylesheet" href="style.css">',
             f"<style>{css_content}</style>"
@@ -111,7 +122,7 @@ class BubblyExporter:
             "{{header}}", header_html
         ).replace(
             #"{{messages_json_path}}", json_file
-            "{{messages_json_content}}", json.dumps(self.messages, ensure_ascii=False)
+            "{{messages_json_content}}", json.dumps(messages_for_html, ensure_ascii=False)
         )
 
         # ----------------------

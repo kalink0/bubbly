@@ -16,10 +16,20 @@ def prepare_input_generic(input_path):
     input_path = Path(input_path).resolve()
 
     # Case 1: zip file
-    if input_path.is_file() and input_path.suffix.lower() == ".zip":
+    if input_path.is_file() and input_path.suffix.lower() in {".zip", ".wbu"}:
         temp_dir = Path(tempfile.mkdtemp(prefix="bubbly_"))
-        with zipfile.ZipFile(input_path, "r") as zip_ref:
-            zip_ref.extractall(temp_dir)
+        try:
+            with zipfile.ZipFile(input_path, "r") as zip_ref:
+                zip_ref.extractall(temp_dir)
+        except zipfile.BadZipFile:
+            data = input_path.read_bytes()
+            sig = data.find(b"PK\x03\x04")
+            if sig == -1:
+                raise
+            fixed_zip = temp_dir / input_path.name
+            fixed_zip.write_bytes(data[sig:])
+            with zipfile.ZipFile(fixed_zip, "r") as zip_ref:
+                zip_ref.extractall(temp_dir)
         # Assume first folder inside zip is the chat folder
         extracted_items = list(temp_dir.iterdir())
         if len(extracted_items) == 1 and extracted_items[0].is_dir():

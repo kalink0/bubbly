@@ -16,6 +16,10 @@ class TelegramDesktopChatExportParser:
     """
     Parser for Telegram Desktop chat exports (machine-readable JSON).
     """
+    EXTRA_ARGS = {
+        "tg_account_name": "Optional. Account display name for is_owner detection.",
+        "is_group_chat": "Optional. true or false to override auto-detect.",
+    }
 
     def parse(
         self,
@@ -35,6 +39,7 @@ class TelegramDesktopChatExportParser:
             raise ValueError("Invalid Telegram export: 'messages' is not a list")
 
         messages: List[Dict] = []
+        chat_name = data.get("name")
         for msg in raw_messages:
             if not isinstance(msg, dict):
                 continue
@@ -55,12 +60,13 @@ class TelegramDesktopChatExportParser:
                 "media": media,
                 "url": url,
                 "is_owner": bool(tg_account_name and sender == tg_account_name),
+                "chat": chat_name,
             })
 
         metadata = {
             "user": kwargs.get("user"),
             "case": kwargs.get("case"),
-            "chat_name": data.get("name"),
+            "chat_name": chat_name,
             "source": "Telegram",
             "tg_account_name": tg_account_name,
             "is_group_chat": self._infer_group_chat(data, kwargs),
