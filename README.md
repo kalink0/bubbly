@@ -2,7 +2,13 @@ Bubbly – Bubble your chats
 
 ## Overview
 
-Bubbly parses generates an HTML report with search, filters, time filtering, and media previews in bubble view for chats from different messengers/exports. It currently supports WhatsApp chat exports (iOS and Android), Telegram Desktop exports (JSON), and Wire Messenger unencrypted backups (.wbu/.zip with .binpb files). Encrypted Wire backups are not supported yet.
+Bubbly generates an HTML report with search, filters, time filtering, and media previews in bubble view for chats from different messengers/exports. It currently supports:
+
+- WhatsApp chat exports (iOS and Android)
+- Telegram Desktop exports (JSON)
+- Wire Messenger unencrypted backups (.wbu/.zip with .binpb files).
+
+![Example report](images/example.png)
 
 ## Usage
 
@@ -16,10 +22,10 @@ python messenger/bubbly/bubbly_launcher.py \
   --creator "Analyst Name" \
   --case CASE-123 \
   --templates_folder messenger/bubbly/templates \
-  --extra_args platform=android wa_account_name="Owner Name" wa_account_number="+123" is_group_chat=false
+  --parser_args platform=android wa_account_name="Owner Name" wa_account_number="+123" is_group_chat=false
 ```
 
-Config file usage (optional `default_conf.json` next to the launcher, or `--config` to point to another file). CLI args override config values. `extra_args` merges config and CLI (CLI wins on conflicts).
+Config file usage (optional `default_conf.json` next to the launcher, or `--config` to point to another file). CLI args override config values. `parser_args` merges config and CLI (CLI wins on conflicts).
 
 ```bash
 python messenger/bubbly/bubbly_launcher.py --config /path/to/config.json
@@ -35,7 +41,7 @@ Example config:
   "creator": "Analyst Name",
   "case": "CASE-123",
   "templates_folder": "messenger/bubbly/templates",
-  "extra_args": {
+  "parser_args": {
     "platform": "android",
     "wa_account_name": "Owner Name",
     "wa_account_number": "+123",
@@ -47,7 +53,7 @@ Example config:
 
 Notes:
 - `--parser` must be one of: `whatsapp_export`, `telegram_desktop_export`, `wire_messenger_backup`.
-- `extra_args` are parser-specific.
-  - For WhatsApp Chat Exports: `platform`, `wa_account_name`, `wa_account_number`, `is_group_chat`, `chat_name`.
+- `parser_args` are parser-specific.
+  - For WhatsApp Chat Exports: `platform`, `wa_account_name` (optional), `wa_account_number` (optional), `is_group_chat` (default: false), `chat_name` (optional).
   - For Telegram Desktop exports (JSON): `tg_account_name`, `chat_name`, `is_group_chat` (optional override).
   - For Wire Messenger backups: `chat_name` (optional override). Only unencrypted backups are supported.

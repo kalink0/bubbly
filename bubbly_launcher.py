@@ -72,10 +72,12 @@ def apply_config(parser, config):
         "creator",
         "case",
         "templates_folder",
-        "extra_args",
+        "parser_args",
     ):
         if key in config:
             defaults[key] = config[key]
+    if "parser_args" not in defaults and "extra_args" in config:
+        defaults["parser_args"] = config["extra_args"]
     if defaults:
         parser.set_defaults(**defaults)
 
@@ -89,7 +91,8 @@ def parse_args():
     parser.add_argument("--creator", help="User generating the report")
     parser.add_argument("--case", help="Case number")
     parser.add_argument("--templates_folder", help="Path to templates folder")
-    parser.add_argument("--extra_args", nargs="*", help="Parser-specific args as key=value pairs")
+    parser.add_argument("--parser_args", nargs="*", help="Parser-specific args as key=value pairs")
+    parser.add_argument("--extra_args", nargs="*", help="Deprecated. Use --parser_args instead")
     parser.add_argument(
         "--show_parser_args",
         action="store_true",
@@ -116,12 +119,12 @@ def parse_args():
         parser_class = PARSERS.get(args.parser)
         if not parser_class:
             parser.error(f"Unknown parser {args.parser}. Available: {list(PARSERS.keys())}")
-        extra_args = getattr(parser_class, "EXTRA_ARGS", {})
-        print(f"Extra args for parser '{args.parser}':")
-        if not extra_args:
+        parser_args = getattr(parser_class, "EXTRA_ARGS", {})
+        print(f"Parser args for parser '{args.parser}':")
+        if not parser_args:
             print(" (none)")
         else:
-            for key, description in extra_args.items():
+            for key, description in parser_args.items():
                 print(f" - {key}: {description}")
         raise SystemExit(0)
 
@@ -170,8 +173,8 @@ def main():
     # Parser-specific kwargs
     config_extra = {}
     if isinstance(getattr(args, "_config", None), dict):
-        config_extra = parse_extra_args(args._config.get("extra_args"))
-    cli_extra = parse_extra_args(args.extra_args)
+        config_extra = parse_extra_args(args._config.get("parser_args") or args._config.get("extra_args"))
+    cli_extra = parse_extra_args(args.parser_args or args.extra_args)
     extra_kwargs = {**config_extra, **cli_extra}
 
     # Add generic metadata
