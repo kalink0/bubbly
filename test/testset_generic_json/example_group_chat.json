@@ -1,0 +1,36 @@
+{
+  "chat_name": "Example Group Chat",
+  "source": "Generic JSON",
+  "platform": "generic",
+  "_optional": {
+    "top_level": ["source", "platform", "metadata", "chat_name"],
+    "metadata": ["is_group_chat"],
+    "message": ["media", "url", "is_owner", "chat"]
+  },
+  "metadata": {
+    "is_group_chat": true
+  },
+  "messages": [
+    {
+      "sender": "Alice",
+      "timestamp": "2026-02-01T12:34:56Z",
+      "content": "Hello team!",
+      "chat": "Example Group Chat"
+    },
+    {
+      "sender": "Bob",
+      "timestamp": "2026-02-01T12:35:10Z",
+      "content": "Hi Alice",
+      "media": "media/photo_001.png",
+      "chat": "Example Group Chat"
+    },
+    {
+      "sender": "Alice",
+      "timestamp": "2026-02-01T12:36:00Z",
+      "content": "See details at https://example.com",
+      "url": "https://example.com",
+      "is_owner": true,
+      "chat": "Example Group Chat"
+    }
+  ]
+}

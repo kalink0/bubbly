@@ -173,3 +173,10 @@ audio { max-width: 100%; margin-top: 5px; display: block; }
     /* initial height (will be overridden by JS) */
     height: 400px;
 }
+.signature {
+    max-width: 800px;
+    margin: 8px auto 24px auto;
+    text-align: right;
+    font-size: 0.85em;
+    color: #666;
+}

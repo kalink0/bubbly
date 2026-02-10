@@ -5,13 +5,13 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from exporter import BubblyExporter
+from bubbly_version import BUBBLY_VERSION
 from parsers.whatsapp_chat_export import WhatsAppChatExportParser
 from parsers.telegram_desktop_chat_export import TelegramDesktopChatExportParser
 from parsers.wire_messenger_backup import WireMessengerBackupParser
+from parsers.generic_json_parser import GenericJsonParser
 from utils import prepare_input_generic 
 
-
-BUBBLY_VERSION = "0.1"
 
 def print_banner():
     width = 54
@@ -38,6 +38,7 @@ PARSERS = {
     "whatsapp_export": WhatsAppChatExportParser,
     "telegram_desktop_export": TelegramDesktopChatExportParser,
     "wire_messenger_backup": WireMessengerBackupParser,
+    "generic_json": GenericJsonParser,
 }
 
 # ----------------------
@@ -184,21 +185,59 @@ def main():
         "chat_name": extra_kwargs.get("chat_name"),
     })
 
-    # Initialize parser
-    parser_instance = parser_class()
-
-    # Parse messages
-    messages, metadata = parser_instance.parse(input_path, media_folder, **extra_kwargs)
-
-    # Export HTML
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_folder = Path(args.output) / f"bubbly_{timestamp}"
+    output_base = Path(args.output) / f"bubbly_{timestamp}"
     safe_case = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(args.case)).strip("._-")
     if not safe_case:
         safe_case = "case"
-    output_html_name = f"{safe_case}_report.html"
-    exporter = BubblyExporter(messages, media_folder, output_folder, metadata, templates_folder=args.templates_folder)
-    exporter.export_html(output_html_name=output_html_name)
+
+    # Initialize parser
+    parser_instance = parser_class()
+
+    if parser_class is GenericJsonParser:
+        json_file = extra_kwargs.get("json_file")
+        json_paths = parser_instance.resolve_json_paths(input_path, json_file=json_file)
+
+        combined_messages = []
+        combined_metadata = None
+        any_group_chat = False
+
+        for json_path in json_paths:
+            run_kwargs = dict(extra_kwargs)
+
+            messages, metadata = parser_instance.parse(json_path, media_folder, **run_kwargs)
+            combined_messages.extend(messages)
+            any_group_chat = any_group_chat or bool(metadata.get("is_group_chat"))
+            if combined_metadata is None:
+                combined_metadata = metadata
+
+        if combined_metadata is None:
+            raise ValueError("No JSON messages found to export")
+
+        if len(json_paths) > 1:
+            combined_metadata = dict(combined_metadata)
+            combined_metadata["chat_name"] = "Multiple chats"
+            combined_metadata["is_group_chat"] = any_group_chat
+
+        output_folder = output_base
+        output_html_name = f"{safe_case}_report.html"
+        exporter = BubblyExporter(
+            combined_messages,
+            media_folder,
+            output_folder,
+            combined_metadata,
+            templates_folder=args.templates_folder,
+        )
+        exporter.export_html(output_html_name=output_html_name)
+    else:
+        # Parse messages
+        messages, metadata = parser_instance.parse(input_path, media_folder, **extra_kwargs)
+
+        # Export HTML
+        output_folder = output_base
+        output_html_name = f"{safe_case}_report.html"
+        exporter = BubblyExporter(messages, media_folder, output_folder, metadata, templates_folder=args.templates_folder)
+        exporter.export_html(output_html_name=output_html_name)
 
 if __name__ == "__main__":
     main()

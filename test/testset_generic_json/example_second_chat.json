@@ -1,0 +1,40 @@
+{
+  "chat_name": "No Group Chat",
+  "source": "Generic JSON",
+  "platform": "generic",
+  "_optional": {
+    "top_level": ["source", "platform", "metadata", "chat_name"],
+    "metadata": ["is_group_chat"],
+    "message": ["media", "url", "is_owner", "chat"]
+  },
+
+  "messages": [
+    {
+      "sender": "K.",
+      "timestamp": "2026-02-01T12:34:56Z",
+      "content": "Hello Bob!",
+      "is_owner": true
+    },
+    {
+      "sender": "Bob",
+      "timestamp": "2026-02-01T12:35:10Z",
+      "content": "Hi K.",
+      "media": "media/photo_001.png"
+    },
+    {
+      "sender": "K.",
+      "timestamp": "2026-02-01T12:36:00Z",
+      "content": "See details at https://example.com",
+      "url": "https://example.com",
+      "is_owner": true
+    }
+    ,
+    {
+      "sender": "K",
+      "timestamp": "2026-02-01T12:36:00Z",
+      "content": "Let's make some noise",
+      "media": "media/audio1.mp3",
+      "is_owner": true
+    }
+  ]
+}

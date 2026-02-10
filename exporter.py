@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 import json
+from bubbly_version import BUBBLY_VERSION
 
 class BubblyExporter:
     def __init__(self, messages, media_folder, output_folder, metadata, templates_folder):
@@ -95,6 +96,10 @@ class BubblyExporter:
         header_html.append("</div></div>")
         header_html = "\n".join(header_html)
 
+        signature_html = (
+            f'<div class="signature">Created with Bubbly v{BUBBLY_VERSION}</div>'
+        )
+
         # ----------------------
         # Load templates
         # ----------------------
@@ -120,6 +125,8 @@ class BubblyExporter:
             f"<script>{js_content}</script>"
         ).replace(
             "{{header}}", header_html
+        ).replace(
+            "{{signature}}", signature_html
         ).replace(
             #"{{messages_json_path}}", json_file
             "{{messages_json_content}}", json.dumps(messages_for_html, ensure_ascii=False)

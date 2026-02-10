@@ -198,9 +198,19 @@ class WireMessengerBackupParser:
     def _format_timestamp(self, timestamp_ms: Any) -> str:
         if isinstance(timestamp_ms, (int, float)):
             dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
-            return dt.strftime("%Y-%m-%d %H:%M:%S")
+            return dt.strftime("%Y-%m-%dT%H:%M:%S")
         if isinstance(timestamp_ms, str):
-            return timestamp_ms
+            text = timestamp_ms.strip()
+            if not text:
+                return ""
+            text = text.replace("Z", "+00:00")
+            try:
+                dt = datetime.fromisoformat(text)
+            except ValueError as exc:
+                raise ValueError(f"Invalid Wire timestamp format: {timestamp_ms}") from exc
+            if dt.tzinfo is not None:
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            return dt.strftime("%Y-%m-%dT%H:%M:%S")
         return ""
 
 

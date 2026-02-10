@@ -8,6 +8,7 @@ Description: Creates Bubbly JSON from Telegram Desktop exports.
 
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, Any
+from datetime import datetime, timezone
 import json
 import re
 
@@ -49,7 +50,7 @@ class TelegramDesktopChatExportParser:
             if not content:
                 content = self._fallback_content(msg)
 
-            timestamp = msg.get("date") or ""
+            timestamp = self._normalize_timestamp(msg.get("date") or "")
             media = self._extract_media(msg)
             url = self._extract_url(content)
 
@@ -133,3 +134,18 @@ class TelegramDesktopChatExportParser:
         if not chat_type:
             return False
         return chat_type not in {"personal_chat", "private_chat", "saved_messages"}
+
+    def _normalize_timestamp(self, value: Any) -> str:
+        if not isinstance(value, str):
+            return ""
+        text = value.strip()
+        if not text:
+            return ""
+        text = text.replace("Z", "+00:00")
+        try:
+            dt = datetime.fromisoformat(text)
+        except ValueError as exc:
+            raise ValueError(f"Invalid Telegram timestamp format: {value}") from exc
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt.strftime("%Y-%m-%dT%H:%M:%S")

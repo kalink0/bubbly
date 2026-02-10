@@ -8,6 +8,7 @@ Description: Creates Bubbly JSON from WhatsApp iOS/Android chat exports.
 
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
+from datetime import datetime
 import re
 import unicodedata
 
@@ -115,7 +116,7 @@ class WhatsAppChatExportParser:
                 media_file, content = self._extract_media_file_ios(content)
 
                 current_msg = {
-                    "timestamp": timestamp,
+                    "timestamp": self._normalize_timestamp_ios(timestamp),
                     "sender": sender,
                     "content": content,
                     "media": media_file,
@@ -168,7 +169,7 @@ class WhatsAppChatExportParser:
                         sender, content = rest, ""
 
                     current_msg = {
-                        "timestamp": timestamp,
+                        "timestamp": self._normalize_timestamp_android(timestamp),
                         "sender": sender,
                         "content": content,
                         "media": None,
@@ -208,6 +209,24 @@ class WhatsAppChatExportParser:
             cleaned_lines.append(line)
 
         return media_file, "\n".join(cleaned_lines).strip()
+
+    def _normalize_timestamp_ios(self, timestamp: str) -> str:
+        if not timestamp:
+            return ""
+        try:
+            dt = datetime.strptime(timestamp, "%d.%m.%Y, %H:%M")
+        except ValueError as exc:
+            raise ValueError(f"Invalid iOS timestamp format: {timestamp}") from exc
+        return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+    def _normalize_timestamp_android(self, timestamp: str) -> str:
+        if not timestamp:
+            return ""
+        try:
+            dt = datetime.strptime(timestamp, "%d/%m/%Y, %H:%M")
+        except ValueError as exc:
+            raise ValueError(f"Invalid Android timestamp format: {timestamp}") from exc
+        return dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     # ----------------------
     # Media extraction Android

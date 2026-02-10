@@ -215,8 +215,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min)).getTime();
         }
 
-        // Telegram JSON: "YYYY-MM-DDTHH:MM:SS" or "YYYY-MM-DD HH:MM:SS"
-        match = text.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+        // ISO 8601 without timezone: "YYYY-MM-DDTHH:MM:SS"
+        match = text.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
         if (match) {
             const [, yyyy, mm, dd, hh, min, sec] = match;
             return new Date(
@@ -229,7 +229,25 @@ document.addEventListener("DOMContentLoaded", () => {
             ).getTime();
         }
 
+        // ISO 8601 with timezone: "YYYY-MM-DDTHH:MM:SSZ" or "+/-HH:MM"
+        match = text.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(Z|[+-]\d{2}:\d{2})$/);
+        if (match) {
+            const parsed = Date.parse(text);
+            return Number.isNaN(parsed) ? null : parsed;
+        }
+
         return null;
+    }
+
+    function sortMessagesByTimestamp(inputMessages) {
+        return inputMessages.slice().sort((a, b) => {
+            const ta = parseTimestamp(a.timestamp);
+            const tb = parseTimestamp(b.timestamp);
+            if (ta === null && tb === null) return 0;
+            if (ta === null) return 1;
+            if (tb === null) return -1;
+            return ta - tb;
+        });
     }
 
     function applyFilters() {
@@ -299,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     }
 
-        resetAndRender(filtered);
+        resetAndRender(sortMessagesByTimestamp(filtered));
     }
 
     searchInput.addEventListener("input", applyFilters);
@@ -424,6 +442,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // ----------------------
     // Initial render
     // ----------------------
-    resetAndRender(filteredMessages);
+    resetAndRender(sortMessagesByTimestamp(filteredMessages));
 
 });
