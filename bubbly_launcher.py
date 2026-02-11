@@ -12,7 +12,19 @@ from parsers.wire_messenger_backup import WireMessengerBackupParser
 from parsers.generic_json_parser import GenericJsonParser
 from utils import prepare_input_generic 
 
+# ----------------------
+# Parser registry
+# ----------------------
+PARSERS = {
+    "whatsapp_export": WhatsAppChatExportParser,
+    "telegram_desktop_export": TelegramDesktopChatExportParser,
+    "wire_messenger_backup": WireMessengerBackupParser,
+    "generic_json": GenericJsonParser,
+}
 
+# ----------------------
+# Printing the CLI banner
+# ----------------------
 def print_banner():
     width = 54
     inner_width = width - 2
@@ -30,19 +42,8 @@ def print_banner():
     print(banner)
 
 
-
 # ----------------------
-# Parser registry
-# ----------------------
-PARSERS = {
-    "whatsapp_export": WhatsAppChatExportParser,
-    "telegram_desktop_export": TelegramDesktopChatExportParser,
-    "wire_messenger_backup": WireMessengerBackupParser,
-    "generic_json": GenericJsonParser,
-}
-
-# ----------------------
-# CLI
+# Config Handling
 # ----------------------
 def load_config(config_path):
     default_path = Path(__file__).resolve().parent / "default_conf.json"
@@ -82,7 +83,9 @@ def apply_config(parser, config):
     if defaults:
         parser.set_defaults(**defaults)
 
-
+# ----------------------
+# Config Handling
+# ----------------------
 def parse_args():
     parser = argparse.ArgumentParser(description="Bubbly Launcher - Chat Export Viewer")
     parser.add_argument("--config", help="Path to JSON config file")
@@ -139,7 +142,7 @@ def parse_args():
     return args
 
 # ----------------------
-# Parse key=value pairs
+# Parse key=value pairs for parser arguments
 # ----------------------
 def parse_extra_args(extra_args_list):
     kwargs = {}
@@ -194,6 +197,7 @@ def main():
     # Initialize parser
     parser_instance = parser_class()
 
+    # A few steps to do specifically for the generic JSON parser
     if parser_class is GenericJsonParser:
         json_file = extra_kwargs.get("json_file")
         json_paths = parser_instance.resolve_json_paths(input_path, json_file=json_file)
@@ -229,11 +233,11 @@ def main():
             templates_folder=args.templates_folder,
         )
         exporter.export_html(output_html_name=output_html_name)
+   
     else:
-        # Parse messages
+        # Parsing and exporting for all other parsers
         messages, metadata = parser_instance.parse(input_path, media_folder, **extra_kwargs)
 
-        # Export HTML
         output_folder = output_base
         output_html_name = f"{safe_case}_report.html"
         exporter = BubblyExporter(messages, media_folder, output_folder, metadata, templates_folder=args.templates_folder)

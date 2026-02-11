@@ -15,4 +15,3 @@ class BaseParser(ABC):
 
         kwargs: parser-specific options
         """
-        pass
