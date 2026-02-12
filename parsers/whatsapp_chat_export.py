@@ -16,7 +16,7 @@ class WhatsAppChatExportParser:
     """
     Parser for WhatsApp chat exports (iOS + Android)
     """
-    EXTRA_ARGS = {
+    PARSER_ARGS = {
         "platform": "Required. 'ios' or 'android'.",
         "wa_account_name": "Optional. Account display name for is_owner detection.",
         "wa_account_number": "Optional. Account phone number (string).",

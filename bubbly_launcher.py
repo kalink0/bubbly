@@ -78,8 +78,6 @@ def apply_config(parser, config):
     ):
         if key in config:
             defaults[key] = config[key]
-    if "parser_args" not in defaults and "extra_args" in config:
-        defaults["parser_args"] = config["extra_args"]
     if defaults:
         parser.set_defaults(**defaults)
 
@@ -88,19 +86,19 @@ def apply_config(parser, config):
 # ----------------------
 def parse_args():
     parser = argparse.ArgumentParser(description="Bubbly Launcher - Chat Export Viewer")
-    parser.add_argument("--config", help="Path to JSON config file")
-    parser.add_argument("--parser", help="Parser name")
-    parser.add_argument("--input", help="Input file/folder/zip")
-    parser.add_argument("--output", help="Output folder for HTML report")
-    parser.add_argument("--creator", help="User generating the report")
-    parser.add_argument("--case", help="Case number")
-    parser.add_argument("--templates_folder", help="Path to templates folder")
-    parser.add_argument("--parser_args", nargs="*", help="Parser-specific args as key=value pairs")
-    parser.add_argument("--extra_args", nargs="*", help="Deprecated. Use --parser_args instead")
+    parser.add_argument("-f", "--config", help="Path to JSON config file")
+    parser.add_argument("-p", "--parser", help="Parser name")
+    parser.add_argument("-i", "--input", help="Input file/folder/zip")
+    parser.add_argument("-o", "--output", help="Output folder for HTML report")
+    parser.add_argument("-u", "--creator", help="User generating the report")
+    parser.add_argument("-k", "--case", help="Case number")
+    parser.add_argument("-t", "--templates_folder", help="Path to templates folder")
+    parser.add_argument("-a", "--parser_args", nargs="*", help="Parser-specific args as key=value pairs")
     parser.add_argument(
+        "-s",
         "--show_parser_args",
         action="store_true",
-        help="Show extra args supported by the selected parser and exit",
+        help="Show parser args supported by the selected parser and exit",
     )
 
     if len(sys.argv) == 1 or "-h" in sys.argv:
@@ -123,12 +121,12 @@ def parse_args():
         parser_class = PARSERS.get(args.parser)
         if not parser_class:
             parser.error(f"Unknown parser {args.parser}. Available: {list(PARSERS.keys())}")
-        parser_args = getattr(parser_class, "EXTRA_ARGS", {})
+        supported_parser_args = getattr(parser_class, "PARSER_ARGS", {})
         print(f"Parser args for parser '{args.parser}':")
-        if not parser_args:
+        if not supported_parser_args:
             print(" (none)")
         else:
-            for key, description in parser_args.items():
+            for key, description in supported_parser_args.items():
                 print(f" - {key}: {description}")
         raise SystemExit(0)
 
@@ -144,12 +142,12 @@ def parse_args():
 # ----------------------
 # Parse key=value pairs for parser arguments
 # ----------------------
-def parse_extra_args(extra_args_list):
-    kwargs = {}
-    if isinstance(extra_args_list, dict):
-        return dict(extra_args_list)
-    if extra_args_list:
-        for item in extra_args_list:
+def parse_parser_args(parser_args_list):
+    parsed_parser_args = {}
+    if isinstance(parser_args_list, dict):
+        return dict(parser_args_list)
+    if parser_args_list:
+        for item in parser_args_list:
             if "=" in item:
                 k, v = item.split("=", 1)
                 # Convert true/false to bool
@@ -157,8 +155,8 @@ def parse_extra_args(extra_args_list):
                     v = True
                 elif v.lower() == "false":
                     v = False
-                kwargs[k] = v
-    return kwargs
+                parsed_parser_args[k] = v
+    return parsed_parser_args
 
 
 # ----------------------
@@ -175,17 +173,17 @@ def main():
     input_path, media_folder = prepare_input_generic(args.input)
 
     # Parser-specific kwargs
-    config_extra = {}
+    config_parser_args = {}
     if isinstance(getattr(args, "_config", None), dict):
-        config_extra = parse_extra_args(args._config.get("parser_args") or args._config.get("extra_args"))
-    cli_extra = parse_extra_args(args.parser_args or args.extra_args)
-    extra_kwargs = {**config_extra, **cli_extra}
+        config_parser_args = parse_parser_args(args._config.get("parser_args"))
+    cli_parser_args = parse_parser_args(args.parser_args)
+    parser_kwargs = {**config_parser_args, **cli_parser_args}
 
     # Add generic metadata
-    extra_kwargs.update({
+    parser_kwargs.update({
         "user": args.creator,
         "case": args.case,
-        "chat_name": extra_kwargs.get("chat_name"),
+        "chat_name": parser_kwargs.get("chat_name"),
     })
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -199,7 +197,7 @@ def main():
 
     # A few steps to do specifically for the generic JSON parser
     if parser_class is GenericJsonParser:
-        json_file = extra_kwargs.get("json_file")
+        json_file = parser_kwargs.get("json_file")
         json_paths = parser_instance.resolve_json_paths(input_path, json_file=json_file)
 
         combined_messages = []
@@ -207,7 +205,7 @@ def main():
         any_group_chat = False
 
         for json_path in json_paths:
-            run_kwargs = dict(extra_kwargs)
+            run_kwargs = dict(parser_kwargs)
 
             messages, metadata = parser_instance.parse(json_path, media_folder, **run_kwargs)
             combined_messages.extend(messages)
@@ -236,7 +234,7 @@ def main():
    
     else:
         # Parsing and exporting for all other parsers
-        messages, metadata = parser_instance.parse(input_path, media_folder, **extra_kwargs)
+        messages, metadata = parser_instance.parse(input_path, media_folder, **parser_kwargs)
 
         output_folder = output_base
         output_html_name = f"{safe_case}_report.html"

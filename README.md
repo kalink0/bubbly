@@ -26,6 +26,19 @@ python messenger/bubbly/bubbly_launcher.py \
   --parser_args platform=android wa_account_name="Owner Name" wa_account_number="+123" is_group_chat=false
 ```
 
+Short flag equivalent:
+
+```bash
+python messenger/bubbly/bubbly_launcher.py \
+  -p whatsapp_export \
+  -i /path/to/chat_export.zip \
+  -o /path/to/output \
+  -u "Analyst Name" \
+  -k CASE-123 \
+  -t messenger/bubbly/templates \
+  -a platform=android wa_account_name="Owner Name" wa_account_number="+123" is_group_chat=false
+```
+
 Config file usage (optional `default_conf.json` next to the launcher, or `--config` to point to another file). CLI args override config values. `parser_args` merges config and CLI (CLI wins on conflicts).
 
 ```bash
@@ -53,7 +66,7 @@ Example config:
 ```
 
 Notes:
-- `--parser` must be one of: `whatsapp_export`, `telegram_desktop_export`, `wire_messenger_backup`, `generic_json`.
+- `--parser` / `-p` must be one of: `whatsapp_export`, `telegram_desktop_export`, `wire_messenger_backup`, `generic_json`.
 - `parser_args` are parser-specific.
   - For WhatsApp Chat Exports: `platform`, `wa_account_name` (optional), `wa_account_number` (optional), `is_group_chat` (default: false), `chat_name` (optional).
   - For Telegram Desktop exports (JSON): `tg_account_name`, `chat_name`, `is_group_chat` (optional override).
@@ -96,4 +109,51 @@ Minimal example:
     }
   ]
 }
+```
+
+## CSV to JSON utility
+
+For non-programmers, you can create a Bubbly-compatible JSON from a CSV file (that is a possible output from different tools and sqlitebrowser) using:
+
+```bash
+python csv_to_bubbly_json.py \
+  --csv /path/to/messages.csv \
+  --output /path/to/chat.json \
+  --messenger whatsapp \
+  --source "SQLite export" \
+  --chat_name "Team Chat" \
+  --map sender=person timestamp=ts content=message media=file_path
+```
+
+How mapping works:
+- Left side is the Bubbly message field.
+- Right side is your CSV column name.
+
+Accepted mapping target fields:
+- Mandatory: `sender`, `timestamp`, `content`
+- Optional: `media`, `url`, `is_owner`, `chat`
+
+Field meanings:
+- `sender`: message author name.
+- `timestamp`: message timestamp (ISO 8601, seconds required).
+- `content`: message text.
+- `media`: media file path/name (optional).
+- `url`: URL linked to the message (optional).
+- `is_owner`: whether this message is from the owner/account (`true/false`, `1/0`, `yes/no` accepted).
+- `chat`: chat name per message (optional, useful for merged datasets).
+
+Example:
+- `sender=person` means CSV column `person` becomes JSON field `sender`.
+
+Notes:
+- `timestamp` values must already be ISO 8601 (for example `2026-02-01T12:34:56`; format `%Y-%m-%dT%H:%M:%S`).
+- Rows missing required values are skipped by default.
+- Use `--strict` to fail instead of skipping invalid rows.
+- Script doesn't take care of media file - The media must be copied to the path given in the column media -> should be relative to the newly created json.
+
+To create this CSV you can use DB Browser for SQLite or run a query directly:
+```bash
+sqlite3 /path/to/db.sqlite -header -csv \
+  "SELECT person, ts, message, file_path FROM messages;" \
+  > /tmp/messages.csv
 ```

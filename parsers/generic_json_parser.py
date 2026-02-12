@@ -16,7 +16,7 @@ class GenericJsonParser:
     """
     Parser for generic JSON chat exports.
     """
-    EXTRA_ARGS = {
+    PARSER_ARGS = {
         "json_file": "Optional. JSON file name to load when input is a folder/zip.",
         "messages_key": "Optional. Key holding messages list (default: messages).",
         "metadata_key": "Optional. Key holding metadata dict (default: metadata).",

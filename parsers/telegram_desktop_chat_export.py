@@ -17,7 +17,7 @@ class TelegramDesktopChatExportParser:
     """
     Parser for Telegram Desktop chat exports (machine-readable JSON).
     """
-    EXTRA_ARGS = {
+    PARSER_ARGS = {
         "tg_account_name": "Optional. Account display name for is_owner detection.",
         "is_group_chat": "Optional. true or false to override auto-detect.",
     }

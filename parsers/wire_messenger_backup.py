@@ -21,7 +21,7 @@ class WireMessengerBackupParser:
     """
     Parser for Wire Messenger unencrypted backups (.binpb protobuf files).
     """
-    EXTRA_ARGS = {
+    PARSER_ARGS = {
         "chat_name": "Optional. Overrides chat name in report header.",
     }
 
