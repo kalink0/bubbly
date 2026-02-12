@@ -157,6 +157,12 @@ select[multiple] {
 .media { margin-top: 5px; }
 img { max-height: 150px; border-radius: 10px; }
 video { max-width: 100%; border-radius: 10px; }
+.chat-video {
+    width: min(100%, 340px);
+    max-height: 260px;
+    display: block;
+    border-radius: 10px;
+}
 audio { max-width: 100%; margin-top: 5px; display: block; }
 .clear { clear: both; }
 .left { background: #e0e0e0; float: left; clear: both; color: black; }

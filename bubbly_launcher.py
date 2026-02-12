@@ -10,7 +10,7 @@ from parsers.whatsapp_chat_export import WhatsAppChatExportParser
 from parsers.telegram_desktop_chat_export import TelegramDesktopChatExportParser
 from parsers.wire_messenger_backup import WireMessengerBackupParser
 from parsers.generic_json_parser import GenericJsonParser
-from utils import prepare_input_generic 
+from utils import normalize_user_path, prepare_input_generic, run_interactive_wizard
 
 # ----------------------
 # Parser registry
@@ -100,8 +100,14 @@ def parse_args():
         action="store_true",
         help="Show parser args supported by the selected parser and exit",
     )
+    parser.add_argument(
+        "-m",
+        "--interactive",
+        action="store_true",
+        help="Run interactive menu mode (guided setup)",
+    )
 
-    if len(sys.argv) == 1 or "-h" in sys.argv:
+    if "-h" in sys.argv:
         print("Available parsers:")
         for name in PARSERS.keys():
             print(f" - {name}")
@@ -129,6 +135,9 @@ def parse_args():
             for key, description in supported_parser_args.items():
                 print(f" - {key}: {description}")
         raise SystemExit(0)
+
+    if args.interactive or len(sys.argv) == 1:
+        return run_interactive_wizard(parser, args, PARSERS, parse_parser_args)
 
     missing = [
         name
@@ -165,6 +174,8 @@ def parse_parser_args(parser_args_list):
 def main():
     print_banner()
     args = parse_args()
+    args.output = str(normalize_user_path(args.output, must_exist=False))
+    args.templates_folder = str(normalize_user_path(args.templates_folder, must_exist=False))
     parser_class = PARSERS.get(args.parser)
     if not parser_class:
         raise ValueError(f"Unknown parser {args.parser}. Available: {list(PARSERS.keys())}")

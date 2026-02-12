@@ -2,6 +2,24 @@ import zipfile
 from pathlib import Path
 import tempfile
 import shutil
+import os
+
+def normalize_user_path(path_value, must_exist=False):
+    raw_input = str(path_value).strip()
+    if (raw_input.startswith('"') and raw_input.endswith('"')) or (
+        raw_input.startswith("'") and raw_input.endswith("'")
+    ):
+        raw_input = raw_input[1:-1]
+
+    normalized = os.path.expanduser(raw_input)
+    # Readline completion may escape spaces as "\ ".
+    normalized = normalized.replace("\\ ", " ")
+    path_obj = Path(normalized).resolve()
+
+    if must_exist and not path_obj.exists():
+        raise FileNotFoundError(f"Path not found: {path_obj}")
+    return path_obj
+
 
 def prepare_input_generic(input_path):
     """
@@ -14,7 +32,7 @@ def prepare_input_generic(input_path):
         input_folder: Path to folder or file containing text/media
         media_folder: Path to folder containing media files (usually same as input folder)
     """
-    input_path = Path(input_path).resolve()
+    input_path = normalize_user_path(input_path, must_exist=True)
 
     # Case 1: zip file
     if input_path.is_file() and input_path.suffix.lower() in {".zip", ".wbu"}:

@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const headerHeight = headerContent.offsetHeight || 0;
         const searchHeight = searchBox.offsetHeight || 0;
         const windowHeight = window.innerHeight;
-        const padding = 180; // space from bottom
+        const padding = 220; // space from bottom
 
         const newHeight = windowHeight - headerHeight - searchHeight - padding;
         container.style.height = newHeight + "px";
@@ -350,7 +350,7 @@ document.addEventListener("DOMContentLoaded", () => {
         else if (["mp4","mov","webm","3gp"].includes(ext)) {
             return `
             <div class="media">
-                <video controls src="media/${displayName}" style="max-width:100%; border-radius:10px;"></video>
+                <video class="chat-video" controls src="media/${displayName}"></video>
                 ${missingNote}
             </div>`;
         } 

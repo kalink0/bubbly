@@ -13,6 +13,14 @@ Bubbly generates an HTML report with search, filters, time filtering, and media 
 
 ## Usage
 
+Interactive menu (guided setup):
+
+```bash
+python messenger/bubbly/bubbly_launcher.py --interactive
+```
+
+You can also start without arguments and Bubbly will open the interactive menu automatically.
+
 CLI usage (all required args on the CLI):
 
 ```bash
