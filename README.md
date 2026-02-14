@@ -7,6 +7,7 @@ Bubbly generates an HTML report with search, filters, time filtering, and media 
 - WhatsApp chat exports (iOS and Android)
 - Telegram Desktop exports (JSON)
 - Wire Messenger unencrypted backups (.wbu/.zip with .binpb files).
+- Threema Messenger unencrypted backups (CSV-based backup folder/zip, plus text export fallback).
 - Generic JSON chat exports (single JSON or multiple JSONs in a folder/zip).
 
 ![Example report](images/example.png)
@@ -74,11 +75,13 @@ Example config:
 ```
 
 Notes:
-- `--parser` / `-p` must be one of: `whatsapp_export`, `telegram_desktop_export`, `wire_messenger_backup`, `generic_json`.
+- `--parser` / `-p` must be one of: `whatsapp_export`, `telegram_desktop_export`, `wire_messenger_backup`, `threema_messenger_backup`, `generic_json`.
 - `parser_args` are parser-specific.
   - For WhatsApp Chat Exports: `platform`, `wa_account_name` (optional), `wa_account_number` (optional), `is_group_chat` (default: false), `chat_name` (optional).
   - For Telegram Desktop exports (JSON): `tg_account_name`, `chat_name`, `is_group_chat` (optional override).
   - For Wire Messenger backups: `chat_name` (optional override). Only unencrypted backups are supported.
+  - For Threema Messenger backups: `threema_account_name` (optional), `chat_name` (optional override), `is_group_chat` (default: false).
+    Threema exports are typically password-encrypted ZIP files; Bubbly currently expects the already decrypted/extracted backup contents (CSV/media files).
   - For Generic JSON: `json_file` (optional), `messages_key` (optional), `metadata_key` (optional), `account_name` (optional), `is_group_chat` (optional override).
 
 ## Generic JSON schema

@@ -9,6 +9,7 @@ from bubbly_version import BUBBLY_VERSION
 from parsers.whatsapp_chat_export import WhatsAppChatExportParser
 from parsers.telegram_desktop_chat_export import TelegramDesktopChatExportParser
 from parsers.wire_messenger_backup import WireMessengerBackupParser
+from parsers.threema_messenger_backup import ThreemaMessengerBackupParser
 from parsers.generic_json_parser import GenericJsonParser
 from utils import normalize_user_path, prepare_input_generic, run_interactive_wizard
 
@@ -19,6 +20,7 @@ PARSERS = {
     "whatsapp_export": WhatsAppChatExportParser,
     "telegram_desktop_export": TelegramDesktopChatExportParser,
     "wire_messenger_backup": WireMessengerBackupParser,
+    "threema_messenger_backup": ThreemaMessengerBackupParser,
     "generic_json": GenericJsonParser,
 }
 

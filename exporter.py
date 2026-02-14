@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 import json
+import mimetypes
 from bubbly_version import BUBBLY_VERSION
 
 class BubblyExporter:
@@ -28,15 +29,96 @@ class BubblyExporter:
     # ----------------------
     def _copy_media(self):
         copied_count = 0
+        copied_targets = set()
         for msg in self.messages:
-            if msg.get("media"):
-                src = self.media_folder / msg["media"]
-                if src.exists():
-                    dest = self.output_folder / "media" / msg["media"]
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy(src, dest)
-                    copied_count += 1
+            media_name = msg.get("media")
+            if not media_name:
+                continue
+
+            src = self.media_folder / media_name
+            if not src.exists():
+                continue
+
+            media_mime = msg.get("media_mime") or self._detect_mime_from_magic(src) or mimetypes.guess_type(str(src))[0]
+            if media_mime and not msg.get("media_mime"):
+                msg["media_mime"] = media_mime
+
+            output_media_name = msg.get("media_output") or media_name
+            if not Path(output_media_name).suffix:
+                ext = self._extension_for_mime(media_mime)
+                if ext:
+                    output_media_name = f"{output_media_name}.{ext}"
+
+            dest = self.output_folder / "media" / output_media_name
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if str(dest) not in copied_targets:
+                shutil.copy(src, dest)
+                copied_targets.add(str(dest))
+                copied_count += 1
+
+            # Keep final media path in messages so frontend uses the copied file name.
+            msg["media"] = output_media_name
         return copied_count
+
+    def _detect_mime_from_magic(self, path: Path):
+        try:
+            header = path.read_bytes()[:64]
+        except Exception:
+            return None
+        if not header:
+            return None
+
+        if header.startswith(b"\xFF\xD8\xFF"):
+            return "image/jpeg"
+        if header.startswith(b"\x89PNG\r\n\x1A\n"):
+            return "image/png"
+        if header.startswith((b"GIF87a", b"GIF89a")):
+            return "image/gif"
+        if header.startswith(b"RIFF") and len(header) >= 12 and header[8:12] == b"WEBP":
+            return "image/webp"
+        if header.startswith(b"%PDF-"):
+            return "application/pdf"
+        if header.startswith(b"OggS"):
+            return "audio/ogg"
+        if header.startswith(b"ID3"):
+            return "audio/mpeg"
+        if len(header) >= 2 and header[0] == 0xFF and (header[1] & 0xE0) == 0xE0:
+            return "audio/mpeg"
+        if header.startswith(b"RIFF") and len(header) >= 12 and header[8:12] == b"WAVE":
+            return "audio/wav"
+        if len(header) >= 12 and header[4:8] == b"ftyp":
+            brand = header[8:12]
+            if brand in {b"M4A ", b"isom", b"mp41", b"mp42"}:
+                return "audio/mp4"
+            if brand in {b"qt  "}:
+                return "video/quicktime"
+            return "video/mp4"
+        if header.startswith(b"\x1A\x45\xDF\xA3"):
+            return "video/webm"
+        return None
+
+    def _extension_for_mime(self, mime):
+        mime = (mime or "").lower().strip()
+        mapping = {
+            "image/jpeg": "jpg",
+            "image/png": "png",
+            "image/gif": "gif",
+            "image/webp": "webp",
+            "video/mp4": "mp4",
+            "video/quicktime": "mov",
+            "video/webm": "webm",
+            "audio/mpeg": "mp3",
+            "audio/mp4": "m4a",
+            "audio/ogg": "ogg",
+            "audio/wav": "wav",
+            "application/pdf": "pdf",
+        }
+        if mime in mapping:
+            return mapping[mime]
+        guessed = mimetypes.guess_extension(mime) if mime else None
+        if guessed:
+            return guessed.lstrip(".")
+        return None
 
     # ----------------------
     # Export messages as JSON

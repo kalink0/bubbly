@@ -250,6 +250,22 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function getMediaCategory(msg) {
+        if (!msg || !msg.media) return null;
+        const mime = (msg.media_mime || "").toLowerCase();
+        if (mime.startsWith("image/")) return "image";
+        if (mime.startsWith("video/")) return "video";
+        if (mime.startsWith("audio/")) return "audio";
+        if (mime === "application/pdf") return "pdf";
+
+        const ext = msg.media.includes(".") ? msg.media.split(".").pop().toLowerCase() : "";
+        if (["jpg","jpeg","png","gif","webp"].includes(ext)) return "image";
+        if (["mp4","mov","webm","3gp"].includes(ext)) return "video";
+        if (["mp3","wav","m4a","aac","opus","ogg"].includes(ext)) return "audio";
+        if (ext === "pdf") return "pdf";
+        return null;
+    }
+
     function applyFilters() {
     let filtered = messages.slice();
 
@@ -271,12 +287,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (mediaTypes.length > 0) {
         filtered = filtered.filter(msg => {
             if (!msg.media) return false;
-            const ext = msg.media.split(".").pop().toLowerCase();
-            if (mediaTypes.includes("image") && ["jpg","jpeg","png","gif","webp"].includes(ext)) return true;
-            if (mediaTypes.includes("video") && ["mp4","mov","webm","3gp"].includes(ext)) return true;
-            if (mediaTypes.includes("audio") && ["mp3","wav","m4a","aac","opus","ogg"].includes(ext)) return true;
-            if (mediaTypes.includes("pdf") && ext === "pdf") return true;
-            return false;
+            const category = getMediaCategory(msg);
+            return category ? mediaTypes.includes(category) : false;
         });
     }
 
@@ -329,15 +341,17 @@ document.addEventListener("DOMContentLoaded", () => {
     timeTo.addEventListener("change", applyFilters);
 
 
-    function renderMedia(mediaFile) {
+    function renderMedia(msg) {
+        const mediaFile = msg && msg.media ? msg.media : "";
         if (!mediaFile) return "";
-        const ext = mediaFile.split('.').pop().toLowerCase();
+        const mediaType = getMediaCategory(msg);
+        const mime = (msg.media_mime || "").toLowerCase();
 
         const isMissing = mediaFile.startsWith("missing:");
         const displayName = isMissing ? mediaFile.replace(/^missing:/, "") : mediaFile;
         const missingNote = isMissing ? `<div class="media-missing">Missing media file</div>` : "";
 
-        if (["jpg","jpeg","png","gif","webp"].includes(ext)) {
+        if (mediaType === "image") {
             // clickable image preview
             return `
             <div class="media">
@@ -347,21 +361,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${missingNote}
             </div>`;
         } 
-        else if (["mp4","mov","webm","3gp"].includes(ext)) {
+        else if (mediaType === "video") {
             return `
             <div class="media">
-                <video class="chat-video" controls src="media/${displayName}"></video>
+                <video class="chat-video" controls>
+                    <source src="media/${displayName}" ${mime ? `type="${mime}"` : ""}>
+                </video>
                 ${missingNote}
             </div>`;
         } 
-        else if (["mp3","wav","m4a","aac","opus","ogg"].includes(ext)) {
+        else if (mediaType === "audio") {
             return `
             <div class="media">
-                <audio controls src="media/${displayName}"></audio>
+                <audio controls>
+                    <source src="media/${displayName}" ${mime ? `type="${mime}"` : ""}>
+                </audio>
                 ${missingNote}
             </div>`;
         } 
-        else if (ext === "pdf") {
+        else if (mediaType === "pdf") {
             return `<div class="media"><a href="media/${displayName}" target="_blank">${displayName}</a>${missingNote}</div>`;
         } 
         else {
@@ -405,7 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <p><strong>${displayName}</strong></p>
                 <p>${msg.content.replace(/\n/g, "<br>")}</p>
                 <span class="timestamp">${msg.timestamp}</span>
-                ${renderMedia(msg.media)}
+                ${renderMedia(msg)}
             `;
 
             container.appendChild(msgDiv);
