@@ -35,8 +35,14 @@ class BubblyExporter:
             if not media_name:
                 continue
 
+            if isinstance(media_name, str) and media_name.startswith("missing:"):
+                # Already marked by parser, keep as-is.
+                continue
+
             src = self.media_folder / media_name
             if not src.exists():
+                msg["media"] = f"missing:{media_name}"
+                msg.pop("media_mime", None)
                 continue
 
             media_mime = msg.get("media_mime") or self._detect_mime_from_magic(src) or mimetypes.guess_type(str(src))[0]

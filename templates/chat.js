@@ -12,6 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchInput = document.getElementById("searchBox");
     const toggleBtn = document.getElementById("toggleHeaderBtn");
     const headerContent = document.getElementById("headerContent");
+    const exportAnnotationsBtn = document.getElementById("exportAnnotationsBtn");
+    const importAnnotationsBtn = document.getElementById("importAnnotationsBtn");
+    const importAnnotationsInput = document.getElementById("importAnnotationsInput");
+    const annotationFeedback = document.getElementById("annotationFeedback");
 
     let filteredMessages = messages.slice(); // initially all messages
     let currentIndex = 0;
@@ -47,14 +51,132 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatFilter = document.getElementById("chatFilter");
     const senderFilter = document.getElementById("senderFilter");
     const mediaFilter = document.getElementById("mediaFilter");
+    const tagFilter = document.getElementById("tagFilter");
     const timePreset = document.getElementById("timePreset");
     const timeRange = document.getElementById("timeRange");
     const timeFrom = document.getElementById("timeFrom");
     const timeTo = document.getElementById("timeTo");
     const messageCount = document.getElementById("messageCount");
 
+    const DEFAULT_TAGS = ["Important", "Relevant", "Follow-up"];
+    const TAG_COLOR_MAP = {
+        "Important": "#dc2626",
+        "Relevant": "#2563eb",
+        "Follow-up": "#eab308"
+    };
+    const tagAssignments = new Map();
+
     const uniqueChats = [...new Set(messages.map(msg => msg.chat || "Chat"))]
         .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+
+    function normalizeTagName(value) {
+        return (value || "").trim().replace(/\s+/g, " ");
+    }
+
+    function getMessageKey(msg) {
+        return [
+            msg.chat || "",
+            msg.timestamp || "",
+            msg.sender || "",
+            msg.content || "",
+            msg.media || ""
+        ].join("||");
+    }
+
+    function simpleHash(text) {
+        let hash = 0;
+        const value = String(text || "");
+        for (let i = 0; i < value.length; i++) {
+            hash = ((hash << 5) - hash) + value.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash).toString(16);
+    }
+
+    function buildReportId() {
+        const count = messages.length;
+        const first = messages[0] ? getMessageKey(messages[0]) : "";
+        const last = messages[count - 1] ? getMessageKey(messages[count - 1]) : "";
+        const chatSeed = [...new Set(messages.map(msg => msg.chat || "Chat"))].sort().join("|");
+        return `report-${simpleHash(`${count}|${first}|${last}|${chatSeed}`)}`;
+    }
+
+    function showAnnotationFeedback(text) {
+        if (!annotationFeedback) return;
+        annotationFeedback.textContent = text;
+        window.setTimeout(() => {
+            if (annotationFeedback.textContent === text) {
+                annotationFeedback.textContent = "";
+            }
+        }, 2200);
+    }
+
+    const REPORT_ID = buildReportId();
+    const TAG_STORAGE_KEY = `bubbly_tags_v1:${REPORT_ID}`;
+
+    function saveTagState() {
+        const payload = {
+            version: 1,
+            report_id: REPORT_ID,
+            updated_at: new Date().toISOString(),
+            assignments: Object.fromEntries(tagAssignments)
+        };
+        try {
+            localStorage.setItem(TAG_STORAGE_KEY, JSON.stringify(payload));
+        } catch (_) {
+            // Non-fatal if storage is unavailable.
+        }
+    }
+
+    function loadTagState() {
+        try {
+            const raw = localStorage.getItem(TAG_STORAGE_KEY);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (parsed.report_id && parsed.report_id !== REPORT_ID) {
+                return;
+            }
+            if (parsed.assignments && typeof parsed.assignments === "object") {
+                Object.entries(parsed.assignments).forEach(([key, tags]) => {
+                    if (!Array.isArray(tags)) return;
+                    const normalized = tags
+                        .map(normalizeTagName)
+                        .filter(tag => tag && DEFAULT_TAGS.includes(tag));
+                    if (normalized.length > 0) {
+                        tagAssignments.set(key, normalized);
+                    }
+                });
+            }
+        } catch (_) {
+            // Ignore invalid storage content.
+        }
+    }
+
+    function applyAnnotationPayload(parsed, allowMismatchedReport = false) {
+        if (!parsed || typeof parsed !== "object") {
+            throw new Error("Invalid annotation file format.");
+        }
+        if (!allowMismatchedReport && parsed.report_id && parsed.report_id !== REPORT_ID) {
+            throw new Error("Annotation file belongs to another report.");
+        }
+        tagAssignments.clear();
+        if (parsed.assignments && typeof parsed.assignments === "object") {
+            Object.entries(parsed.assignments).forEach(([key, tags]) => {
+                if (!Array.isArray(tags)) return;
+                const normalized = tags
+                    .map(normalizeTagName)
+                    .filter(tag => tag && DEFAULT_TAGS.includes(tag));
+                if (normalized.length > 0) {
+                    tagAssignments.set(key, normalized);
+                }
+            });
+        }
+        saveTagState();
+    }
+
+    function getMessageTags(msg) {
+        return tagAssignments.get(msg.__msgKey) || [];
+    }
 
     function buildMultiSelect(container, options, placeholder, single = false, showBulk = false) {
         container.classList.add(single ? "single-select" : "multi-select");
@@ -122,9 +244,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         updateButtonLabel();
                         applyFilters();
                     });
+                    row.appendChild(checkbox);
+                    if (opt.color) {
+                        const dot = document.createElement("span");
+                        dot.className = "tag-color-dot";
+                        dot.style.background = opt.color;
+                        row.appendChild(dot);
+                    }
                     const textNode = document.createElement("span");
                     textNode.textContent = opt.label;
-                    row.appendChild(checkbox);
                     row.appendChild(textNode);
                     list.appendChild(row);
                 });
@@ -166,8 +294,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 return Array.from(selected);
             },
             setOptions(newOptions) {
+                const previous = new Set(selected);
                 currentOptions = newOptions.slice();
                 selected.clear();
+                currentOptions.forEach(opt => {
+                    if (previous.has(opt.value)) {
+                        selected.add(opt.value);
+                    }
+                });
                 renderList("");
             }
         };
@@ -196,6 +330,15 @@ document.addEventListener("DOMContentLoaded", () => {
         { value: "pdf", label: "PDF" }
     ];
     const mediaSelect = buildMultiSelect(mediaFilter, mediaOptions, "All media");
+
+    messages.forEach(msg => {
+        msg.__msgKey = getMessageKey(msg);
+    });
+    loadTagState();
+    const tagOptions = [...DEFAULT_TAGS]
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+        .map(tag => ({ value: tag, label: tag, color: TAG_COLOR_MAP[tag] || "#6b7280" }));
+    const tagSelect = buildMultiSelect(tagFilter, tagOptions, "All tags", false, true);
 
     function parseTimestamp(timestamp) {
         if (!timestamp) return null;
@@ -266,6 +409,48 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
     }
 
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function hashTag(tag) {
+        let hash = 0;
+        const text = String(tag || "");
+        for (let i = 0; i < text.length; i++) {
+            hash = ((hash << 5) - hash) + text.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash);
+    }
+
+    function getTagColor(tag) {
+        if (TAG_COLOR_MAP[tag]) {
+            return TAG_COLOR_MAP[tag];
+        }
+        const h = hashTag(tag) % 360;
+        return `hsl(${h} 70% 45%)`;
+    }
+
+    function setTagOnMessage(msgKey, tag, enabled) {
+        const current = new Set(tagAssignments.get(msgKey) || []);
+        if (enabled) {
+            current.add(tag);
+        } else {
+            current.delete(tag);
+        }
+        if (current.size === 0) {
+            tagAssignments.delete(msgKey);
+        } else {
+            tagAssignments.set(msgKey, Array.from(current).sort((a, b) => a.localeCompare(b)));
+        }
+        saveTagState();
+    }
+
     function applyFilters() {
     let filtered = messages.slice();
 
@@ -289,6 +474,15 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!msg.media) return false;
             const category = getMediaCategory(msg);
             return category ? mediaTypes.includes(category) : false;
+        });
+    }
+
+    // Filter by tags (multi-select, any selected tag matches)
+    const selectedTags = tagSelect.getSelected();
+    if (selectedTags.length > 0) {
+        filtered = filtered.filter(msg => {
+            const msgTags = getMessageTags(msg);
+            return selectedTags.some(tag => msgTags.includes(tag));
         });
     }
 
@@ -325,7 +519,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (query) {
         filtered = filtered.filter(msg =>
             msg.content.toLowerCase().includes(query) ||
-            msg.sender.toLowerCase().includes(query)
+            msg.sender.toLowerCase().includes(query) ||
+            getMessageTags(msg).some(tag => tag.toLowerCase().includes(query))
         );
     }
 
@@ -339,6 +534,54 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     timeFrom.addEventListener("change", applyFilters);
     timeTo.addEventListener("change", applyFilters);
+    if (exportAnnotationsBtn) {
+        exportAnnotationsBtn.addEventListener("click", () => {
+            const payload = {
+                version: 1,
+                report_id: REPORT_ID,
+                updated_at: new Date().toISOString(),
+                assignments: Object.fromEntries(tagAssignments),
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `bubbly_annotations_${REPORT_ID}.json`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(link.href);
+            showAnnotationFeedback("Annotations exported.");
+        });
+    }
+    if (importAnnotationsBtn && importAnnotationsInput) {
+        importAnnotationsBtn.addEventListener("click", () => {
+            importAnnotationsInput.value = "";
+            importAnnotationsInput.click();
+        });
+        importAnnotationsInput.addEventListener("change", async () => {
+            const file = importAnnotationsInput.files && importAnnotationsInput.files[0];
+            if (!file) return;
+            try {
+                const raw = await file.text();
+                const parsed = JSON.parse(raw);
+                const mismatched = parsed && parsed.report_id && parsed.report_id !== REPORT_ID;
+                if (mismatched) {
+                    const proceed = window.confirm(
+                        "This annotation file belongs to another report. Import anyway?"
+                    );
+                    if (!proceed) {
+                        showAnnotationFeedback("Import canceled.");
+                        return;
+                    }
+                }
+                applyAnnotationPayload(parsed, mismatched);
+                applyFilters();
+                showAnnotationFeedback("Annotations imported.");
+            } catch (error) {
+                showAnnotationFeedback("Import failed.");
+            }
+        });
+    }
 
 
     function renderMedia(msg) {
@@ -418,12 +661,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Message HTML
             const chatTag = showChatTag ? `<div class="chat-tag">${msg.chat || "Chat"}</div>` : "";
+            const encodedKey = encodeURIComponent(msg.__msgKey || "");
+            const currentTags = getMessageTags(msg);
+            const tagsHtml = currentTags.length > 0
+                ? `<div class="message-tags">${currentTags.map(tag => `<span class="message-tag" style="background:${getTagColor(tag)};color:#fff;">${escapeHtml(tag)}</span>`).join("")}</div>`
+                : "";
+            const tagOptionsHtml = [...DEFAULT_TAGS]
+                .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+                .map(tag => {
+                    const checked = currentTags.includes(tag) ? "checked" : "";
+                    return `<label class="tag-option"><input type="checkbox" class="tag-checkbox" data-msg-key="${encodedKey}" data-tag="${escapeHtml(tag)}" ${checked}> <span class="tag-color-dot" style="background:${getTagColor(tag)};"></span><span>${escapeHtml(tag)}</span></label>`;
+                })
+                .join("");
             msgDiv.innerHTML = `
                 ${chatTag}
                 <p><strong>${displayName}</strong></p>
                 <p>${msg.content.replace(/\n/g, "<br>")}</p>
                 <span class="timestamp">${msg.timestamp}</span>
                 ${renderMedia(msg)}
+                ${tagsHtml}
+                <div class="tag-editor">
+                    <button type="button" class="tag-edit-btn" data-msg-key="${encodedKey}">Tags</button>
+                    <div class="tag-panel hidden" data-msg-key="${encodedKey}">
+                        ${tagOptionsHtml || '<div class="tag-option">No tags available</div>'}
+                    </div>
+                </div>
             `;
 
             container.appendChild(msgDiv);
@@ -431,6 +693,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         currentIndex = endIndex;
     }
+
+    container.addEventListener("click", (event) => {
+        const button = event.target.closest(".tag-edit-btn");
+        if (!button) return;
+        const msgKey = button.getAttribute("data-msg-key");
+        const panel = container.querySelector(`.tag-panel[data-msg-key="${msgKey}"]`);
+        if (!panel) return;
+        panel.classList.toggle("hidden");
+    });
+
+    container.addEventListener("change", (event) => {
+        const checkbox = event.target.closest(".tag-checkbox");
+        if (!checkbox) return;
+        const msgKey = decodeURIComponent(checkbox.getAttribute("data-msg-key") || "");
+        const tag = normalizeTagName(checkbox.getAttribute("data-tag") || "");
+        if (!msgKey || !tag) return;
+        setTagOnMessage(msgKey, tag, checkbox.checked);
+        applyFilters();
+    });
+
+    document.addEventListener("click", (event) => {
+        if (event.target.closest(".tag-editor")) return;
+        container.querySelectorAll(".tag-panel").forEach(panel => panel.classList.add("hidden"));
+    });
 
     // ----------------------
     // Reset & render (e.g., after search)

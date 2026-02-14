@@ -9,7 +9,13 @@
 
 <!-- Header placeholder -->
 <div id="header">
-  <button id="toggleHeaderBtn" style="margin-bottom:10px;">Toggle Header</button>
+  <div class="header-actions">
+    <button id="toggleHeaderBtn" type="button">Toggle Header</button>
+    <button id="exportAnnotationsBtn" type="button">Export Annotations</button>
+    <button id="importAnnotationsBtn" type="button">Import Annotations</button>
+    <input id="importAnnotationsInput" type="file" accept=".json,application/json" hidden>
+    <span id="annotationFeedback" class="annotation-feedback" aria-live="polite"></span>
+  </div>
   <div id="headerContent">
     {{header}}
   </div>
@@ -38,6 +44,10 @@
   <label class="filter-item">
     <span class="filter-label">Media type:</span>
     <div id="mediaFilter" class="multi-select"></div>
+  </label>
+  <label class="filter-item">
+    <span class="filter-label">Tags:</span>
+    <div id="tagFilter" class="multi-select"></div>
   </label>
   <label class="filter-item">
     <span class="filter-label">Time:</span>
