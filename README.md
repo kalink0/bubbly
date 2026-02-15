@@ -1,9 +1,9 @@
 Bubbly – Bubble your chats
 
-[![Code Quality](https://github.com/kalink0/bubbly/actions/workflows/code_quality.yml/badge.svg)](https://github.com/kalink0/bubbly/actions/workflows/code_quality.yml)
-[![Tests](https://github.com/kalink0/bubbly/actions/workflows/tests.yml/badge.svg)](https://github.com/kalink0/bubbly/actions/workflows/tests.yml)
-[![Build Linux](https://github.com/kalink0/bubbly/actions/workflows/build_linux.yml/badge.svg)](https://github.com/kalink0/bubbly/actions/workflows/build_linux.yml)
-[![Build Windows](https://github.com/kalink0/bubbly/actions/workflows/build_windows.yml/badge.svg)](https://github.com/kalink0/bubbly/actions/workflows/build_windows.yml)
+[![Code Quality](https://github.com/kalink0/bubbly/actions/workflows/build.yml/badge.svg?job=Code%20Quality)](https://github.com/kalink0/bubbly/actions/workflows/build.yml)
+[![Tests](https://github.com/kalink0/bubbly/actions/workflows/build.yml/badge.svg?job=Tests)](https://github.com/kalink0/bubbly/actions/workflows/build.yml)
+[![Build Linux](https://github.com/kalink0/bubbly/actions/workflows/build.yml/badge.svg?job=Build%20Linux)](https://github.com/kalink0/bubbly/actions/workflows/build.yml)
+[![Build Windows](https://github.com/kalink0/bubbly/actions/workflows/build.yml/badge.svg?job=Build%20Windows)](https://github.com/kalink0/bubbly/actions/workflows/build.yml)
 [![Release](https://img.shields.io/github/v/release/kalink0/bubbly?display_name=tag)](https://github.com/kalink0/bubbly/releases)
 [![License: MIT](https://img.shields.io/github/license/kalink0/bubbly)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
