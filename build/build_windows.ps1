@@ -25,9 +25,5 @@ if (Test-Path (Join-Path $RepoRoot 'default_conf.json')) {
   Copy-Item (Join-Path $RepoRoot 'default_conf.json') (Join-Path $ScriptDir 'dist/windows/default_conf.json') -Force
   Write-Host "Copied: $(Join-Path $ScriptDir 'dist/windows/default_conf.json')"
 }
-if (Test-Path (Join-Path $ScriptDir 'README_release.txt')) {
-  Copy-Item (Join-Path $ScriptDir 'README_release.txt') (Join-Path $ScriptDir 'dist/windows/README_release.txt') -Force
-  Write-Host "Copied: $(Join-Path $ScriptDir 'dist/windows/README_release.txt')"
-}
 
 Write-Host "Built: $(Join-Path $ScriptDir "dist/windows/$BinaryName.exe")"

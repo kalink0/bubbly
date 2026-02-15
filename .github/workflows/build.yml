@@ -102,51 +102,13 @@ jobs:
           test -f default_conf.json
           cp default_conf.json build/dist/linux/default_conf.json
 
-      - name: Add release readme to Linux dist
-        run: |
-          test -f build/README_release.txt
-          cp build/README_release.txt build/dist/linux/README_release.txt
-
-      - name: Verify Linux dist contents
-        run: |
-          ls -la build/dist/linux
-          ls -1 build/dist/linux/bubbly_*
-          test -f build/dist/linux/default_conf.json
-          test -f build/dist/linux/README_release.txt
-
-      - name: Create Linux bundle zip
-        run: |
-          python - << 'PY'
-          from pathlib import Path
-          from zipfile import ZipFile, ZIP_DEFLATED
-
-          dist = Path("build/dist/linux")
-          binaries = sorted(
-              p for p in dist.glob("bubbly_*")
-              if p.is_file() and p.name not in {"README_release.txt", "default_conf.json"} and p.suffix != ".zip"
-          )
-          if not binaries:
-              raise SystemExit("No Linux binary found in build/dist/linux")
-          binary = binaries[0]
-          config = dist / "default_conf.json"
-          readme = dist / "README_release.txt"
-          for required in (config, readme):
-              if not required.is_file():
-                  raise SystemExit(f"Missing required file: {required}")
-
-          zip_path = dist / "bubbly_linux_bundle.zip"
-          with ZipFile(zip_path, "w", compression=ZIP_DEFLATED) as zf:
-              zf.write(binary, arcname=binary.name)
-              zf.write(config, arcname=config.name)
-              zf.write(readme, arcname=readme.name)
-          print(f"Created {zip_path}")
-          PY
-
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bubbly-linux
-          path: build/dist/linux/bubbly_linux_bundle.zip
+          path: |
+            build/dist/linux/bubbly_*
+            build/dist/linux/default_conf.json
           retention-days: 1
 
   build-windows:
@@ -172,49 +134,11 @@ jobs:
           if (!(Test-Path 'default_conf.json')) { throw 'Missing default_conf.json' }
           Copy-Item 'default_conf.json' 'build/dist/windows/default_conf.json' -Force
 
-      - name: Add release readme to Windows dist
-        shell: pwsh
-        run: |
-          if (!(Test-Path 'build/README_release.txt')) { throw 'Missing build/README_release.txt' }
-          Copy-Item 'build/README_release.txt' 'build/dist/windows/README_release.txt' -Force
-
-      - name: Verify Windows dist contents
-        shell: pwsh
-        run: |
-          Get-ChildItem -Force build/dist/windows
-          if (!(Get-ChildItem build/dist/windows -Filter 'bubbly_*.exe')) { throw 'Missing executable bubbly_*.exe in build/dist/windows' }
-          if (!(Test-Path 'build/dist/windows/default_conf.json')) { throw 'Missing build/dist/windows/default_conf.json' }
-          if (!(Test-Path 'build/dist/windows/README_release.txt')) { throw 'Missing build/dist/windows/README_release.txt' }
-
-      - name: Create Windows bundle zip
-        shell: pwsh
-        run: |
-          python - << 'PY'
-          from pathlib import Path
-          from zipfile import ZipFile, ZIP_DEFLATED
-
-          dist = Path("build/dist/windows")
-          binaries = sorted(p for p in dist.glob("bubbly_*.exe") if p.is_file())
-          if not binaries:
-              raise SystemExit("No Windows binary found in build/dist/windows")
-          binary = binaries[0]
-          config = dist / "default_conf.json"
-          readme = dist / "README_release.txt"
-          for required in (config, readme):
-              if not required.is_file():
-                  raise SystemExit(f"Missing required file: {required}")
-
-          zip_path = dist / "bubbly_windows_bundle.zip"
-          with ZipFile(zip_path, "w", compression=ZIP_DEFLATED) as zf:
-              zf.write(binary, arcname=binary.name)
-              zf.write(config, arcname=config.name)
-              zf.write(readme, arcname=readme.name)
-          print(f"Created {zip_path}")
-          PY
-
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bubbly-windows
-          path: build/dist/windows/bubbly_windows_bundle.zip
+          path: |
+            build/dist/windows/bubbly_*.exe
+            build/dist/windows/default_conf.json
           retention-days: 1
