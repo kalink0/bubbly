@@ -14,7 +14,11 @@ pyinstaller `
   --workpath (Join-Path $ScriptDir 'work/windows') `
   --specpath (Join-Path $ScriptDir 'spec') `
   --add-data "$RepoRoot\templates;templates" `
-  --add-data "$RepoRoot\default_conf.json;." `
   (Join-Path $RepoRoot 'bubbly_launcher.py')
+
+if (Test-Path (Join-Path $RepoRoot 'default_conf.json')) {
+  Copy-Item (Join-Path $RepoRoot 'default_conf.json') (Join-Path $ScriptDir 'dist/windows/default_conf.json') -Force
+  Write-Host "Copied: $(Join-Path $ScriptDir 'dist/windows/default_conf.json')"
+}
 
 Write-Host "Built: $(Join-Path $ScriptDir 'dist/windows/bubbly.exe')"
