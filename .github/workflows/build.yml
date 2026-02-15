@@ -99,6 +99,7 @@ jobs:
           path: |
             build/dist/linux/bubbly
             build/dist/linux/default_conf.json
+          retention-days: 7
 
       - name: Upload Windows artifacts
         if: runner.os == 'Windows'
@@ -108,3 +109,4 @@ jobs:
           path: |
             build/dist/windows/bubbly.exe
             build/dist/windows/default_conf.json
+          retention-days: 7

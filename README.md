@@ -1,6 +1,10 @@
 Bubbly – Bubble your chats
 
 [![Build Bubbly](https://github.com/kalink0/bubbly/actions/workflows/build.yml/badge.svg)](https://github.com/kalink0/bubbly/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/kalink0/bubbly?display_name=tag)](https://github.com/kalink0/bubbly/releases)
+[![License: MIT](https://img.shields.io/github/license/kalink0/bubbly)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
+![OS](https://img.shields.io/badge/os-linux%20%7C%20windows-blue)
 
 ## Overview
 
