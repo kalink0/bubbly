@@ -4,7 +4,6 @@ Threema Messenger Backup Parser
 Parses unencrypted Threema backups.
 Supported inputs:
 - CSV backup folders/zips (contacts.csv + message_*.csv / group_message_*.csv)
-- Legacy text exports (.txt)
 """
 
 from __future__ import annotations
@@ -37,22 +36,18 @@ class ThreemaMessengerBackupParser:
         input_folder = Path(input_folder)
         media_folder = Path(media_folder)
 
-        if self._has_csv_backup_structure(input_folder):
-            messages = self._parse_csv_backup(
-                input_folder=input_folder,
-                media_folder=media_folder,
-                account_name=threema_account_name or "Me",
+        if not self._has_csv_backup_structure(input_folder):
+            raise FileNotFoundError(
+                "Unsupported Threema input. Expected CSV backup structure with "
+                "'contacts.csv' and at least one 'message_*.csv' file."
             )
-            default_chat_name = "Threema Backup"
-        else:
-            txt_path = self._find_chat_file(input_folder)
-            default_chat_name = txt_path.stem
-            messages = self._parse_text_export(
-                txt_path=txt_path,
-                media_folder=media_folder,
-                chat_name=default_chat_name,
-                account_name=threema_account_name,
-            )
+
+        messages = self._parse_csv_backup(
+            input_folder=input_folder,
+            media_folder=media_folder,
+            account_name=threema_account_name or "Me",
+        )
+        default_chat_name = "Threema Backup"
 
         unique_chats = sorted(
             {
@@ -410,151 +405,6 @@ class ThreemaMessengerBackupParser:
         with path.open("r", encoding="utf-8", newline="") as handle:
             reader = csv.DictReader(handle)
             return [dict(row) for row in reader if row is not None]
-
-    # ----------------------
-    # Legacy text export fallback
-    # ----------------------
-    def _find_chat_file(self, input_folder: Path) -> Path:
-        if input_folder.is_file() and input_folder.suffix.lower() == ".txt":
-            return input_folder
-
-        preferred = ("chat.txt", "export.txt", "threema_chat.txt")
-        for filename in preferred:
-            candidate = input_folder / filename
-            if candidate.is_file():
-                return candidate
-
-        txt_files = sorted(input_folder.glob("*.txt"))
-        if txt_files:
-            return txt_files[0]
-
-        raise FileNotFoundError(f"No supported Threema export found in {input_folder}")
-
-    def _parse_text_export(
-        self,
-        txt_path: Path,
-        media_folder: Path,
-        chat_name: str,
-        account_name: Optional[str],
-    ) -> List[Dict]:
-        messages: List[Dict] = []
-        current: Optional[Dict] = None
-
-        with txt_path.open("r", encoding="utf-8") as handle:
-            for raw_line in handle:
-                line = raw_line.rstrip("\r\n")
-                parsed = self._parse_message_line(line)
-
-                if parsed:
-                    if current:
-                        messages.append(current)
-
-                    timestamp, sender, content = parsed
-                    media, clean_content = self._extract_media_text(content, media_folder)
-                    current = {
-                        "timestamp": timestamp,
-                        "sender": sender,
-                        "content": clean_content,
-                        "media": media,
-                        "url": self._extract_url(clean_content),
-                        "is_owner": bool(account_name and sender == account_name),
-                        "chat": chat_name,
-                    }
-                    continue
-
-                if current is None:
-                    continue
-
-                combined = f"{current.get('content', '')}\n{line}".strip()
-                media, clean_content = self._extract_media_text(combined, media_folder)
-                if media and not current.get("media"):
-                    current["media"] = media
-                current["content"] = clean_content
-                current["url"] = self._extract_url(clean_content)
-
-        if current:
-            messages.append(current)
-
-        return messages
-
-    def _parse_message_line(self, line: str) -> Optional[Tuple[str, str, str]]:
-        if not line.strip():
-            return None
-
-        patterns = [
-            r"^\[(?P<date>\d{2}\.\d{2}\.\d{4})[,\s]+(?P<time>\d{2}:\d{2}(?::\d{2})?)\]\s+(?P<sender>[^:]+):\s*(?P<content>.*)$",
-            r"^(?P<date>\d{2}\.\d{2}\.\d{4})[,\s]+(?P<time>\d{2}:\d{2}(?::\d{2})?)\s+-\s+(?P<sender>[^:]+):\s*(?P<content>.*)$",
-            r"^(?P<date>\d{2}\.\d{2}\.\d{4})[,\s]+(?P<time>\d{2}:\d{2}(?::\d{2})?)\s+(?P<sender>[^:]+):\s*(?P<content>.*)$",
-            r"^\[(?P<date>\d{2}\.\d{2}\.\d{4})[,\s]+(?P<time>\d{2}:\d{2}(?::\d{2})?)\]\s*(?P<content>.*)$",
-        ]
-
-        for pattern in patterns:
-            match = re.match(pattern, line)
-            if not match:
-                continue
-            date_text = match.group("date")
-            time_text = match.group("time")
-            sender = match.groupdict().get("sender") or "System"
-            content = match.groupdict().get("content") or ""
-            return (
-                self._normalize_text_timestamp(date_text, time_text),
-                sender.strip(),
-                content.strip(),
-            )
-        return None
-
-    def _normalize_text_timestamp(self, date_text: str, time_text: str) -> str:
-        fmt = "%d.%m.%Y %H:%M:%S" if len(time_text) == 8 else "%d.%m.%Y %H:%M"
-        dt = datetime.strptime(f"{date_text} {time_text}", fmt)
-        return dt.strftime("%Y-%m-%dT%H:%M:%S")
-
-    def _extract_media_text(self, content: str, media_folder: Path) -> Tuple[Optional[str], str]:
-        if not content:
-            return None, content
-
-        media_extensions = (
-            "jpg|jpeg|png|gif|webp|heic|heif|bmp|"
-            "mp4|mov|webm|3gp|mkv|avi|"
-            "opus|ogg|mp3|m4a|wav|aac|"
-            "pdf|doc|docx|xls|xlsx|ppt|pptx|txt|vcf"
-        )
-
-        attached_pattern = re.compile(
-            rf"<\s*(?:attached|attachment|datei|file|media)\s*:\s*(?P<name>[^<>]+\.({media_extensions}))\s*>",
-            re.IGNORECASE,
-        )
-        plain_pattern = re.compile(
-            rf"^(?:\[?(?:attachment|file|media|datei)\]?\s*)?(?P<name>[^<>]+\.({media_extensions}))$",
-            re.IGNORECASE,
-        )
-
-        detected_media: Optional[str] = None
-        cleaned_lines: List[str] = []
-        for line in content.splitlines():
-            match = attached_pattern.search(line)
-            if match:
-                detected_media = self._match_media_file(match.group("name").strip(), media_folder)
-                continue
-
-            if not detected_media:
-                plain_match = plain_pattern.match(line.strip())
-                if plain_match:
-                    detected_media = self._match_media_file(plain_match.group("name").strip(), media_folder)
-                    continue
-
-            cleaned_lines.append(line)
-
-        cleaned = "\n".join(cleaned_lines).strip()
-        return detected_media, cleaned
-
-    def _match_media_file(self, name: str, media_folder: Path) -> str:
-        candidate = media_folder / name
-        if candidate.exists():
-            return name
-        basename = Path(name).name
-        if (media_folder / basename).exists():
-            return basename
-        return name
 
     # ----------------------
     # Generic helpers

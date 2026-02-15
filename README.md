@@ -12,7 +12,7 @@ It currently supports:
 - WhatsApp chat exports (iOS and Android)
 - Telegram Desktop exports (JSON)
 - Wire Messenger unencrypted backups (.wbu/.zip with .binpb files).
-- Threema Messenger unencrypted backups (CSV-based backup folder/zip, plus text export fallback).
+- Threema Messenger backups (CSV-based backup folder/zip).
 - Generic JSON chat exports (single JSON or multiple JSONs in a folder/zip).
 
 ![Example report](images/example.png)
