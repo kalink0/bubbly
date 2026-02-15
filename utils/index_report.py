@@ -36,7 +36,7 @@ def write_split_index(output_folder, safe_case, reports, case_value, creator=Non
             "</div>"
         )
     rows = []
-    for entry in reports:
+    for entry in sorted(reports, key=lambda item: str(item.get("chat_name") or "").casefold()):
         chat_escaped = html.escape(entry["chat_name"])
         file_escaped = html.escape(entry["file_name"])
         href_escaped = html.escape(entry.get("file_href") or entry["file_name"])
