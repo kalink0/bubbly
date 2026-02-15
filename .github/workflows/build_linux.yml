@@ -1,0 +1,35 @@
+name: Build Linux
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Tests
+    types:
+      - completed
+
+jobs:
+  build-linux:
+    name: Build Linux Executable
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build Linux executable
+        run: bash build/build_linux.sh
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bubbly-linux
+          path: |
+            build/dist/linux/bubbly
+            build/dist/linux/default_conf.json
+          retention-days: 1
