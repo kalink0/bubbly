@@ -25,8 +25,6 @@ class ThreemaMessengerBackupParser:
 
     PARSER_ARGS = {
         "threema_account_name": "Optional. Display name used for outbound messages.",
-        "chat_name": "Optional. Overrides report header chat name.",
-        "is_group_chat": "Optional. true or false. Default: false.",
     }
 
     def parse(
@@ -34,7 +32,6 @@ class ThreemaMessengerBackupParser:
         input_folder: Path,
         media_folder: Path,
         threema_account_name: Optional[str] = None,
-        is_group_chat: bool = False,
         **kwargs,
     ) -> Tuple[List[Dict], Dict]:
         input_folder = Path(input_folder)
@@ -53,17 +50,28 @@ class ThreemaMessengerBackupParser:
             messages = self._parse_text_export(
                 txt_path=txt_path,
                 media_folder=media_folder,
-                chat_name=kwargs.get("chat_name") or default_chat_name,
+                chat_name=default_chat_name,
                 account_name=threema_account_name,
             )
+
+        unique_chats = sorted(
+            {
+                str(entry.get("chat") or "").strip()
+                for entry in messages
+                if str(entry.get("chat") or "").strip()
+            }
+        )
+        if len(unique_chats) == 1:
+            header_chat_name = unique_chats[0]
+        else:
+            header_chat_name = default_chat_name
 
         metadata = {
             "user": kwargs.get("user"),
             "case": kwargs.get("case"),
-            "chat_name": kwargs.get("chat_name") or default_chat_name,
+            "chat_name": header_chat_name,
             "source": "Threema",
             "platform": "mobile",
-            "is_group_chat": self._as_bool(is_group_chat),
             "threema_account_name": threema_account_name,
         }
 

@@ -327,7 +327,9 @@ document.addEventListener("DOMContentLoaded", () => {
         { value: "image", label: "Image" },
         { value: "video", label: "Video" },
         { value: "audio", label: "Audio" },
-        { value: "pdf", label: "PDF" }
+        { value: "document", label: "Document" },
+        { value: "missing", label: "Missing" },
+        { value: "other", label: "Other" }
     ];
     const mediaSelect = buildMultiSelect(mediaFilter, mediaOptions, "All media");
 
@@ -395,18 +397,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getMediaCategory(msg) {
         if (!msg || !msg.media) return null;
+        if (String(msg.media).startsWith("missing:")) return "missing";
         const mime = (msg.media_mime || "").toLowerCase();
         if (mime.startsWith("image/")) return "image";
         if (mime.startsWith("video/")) return "video";
         if (mime.startsWith("audio/")) return "audio";
-        if (mime === "application/pdf") return "pdf";
+        if (
+            mime === "application/pdf" ||
+            mime === "application/msword" ||
+            mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+            mime === "application/vnd.ms-excel" ||
+            mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ) {
+            return "document";
+        }
 
         const ext = msg.media.includes(".") ? msg.media.split(".").pop().toLowerCase() : "";
         if (["jpg","jpeg","png","gif","webp"].includes(ext)) return "image";
         if (["mp4","mov","webm","3gp"].includes(ext)) return "video";
         if (["mp3","wav","m4a","aac","opus","ogg"].includes(ext)) return "audio";
-        if (ext === "pdf") return "pdf";
-        return null;
+        if (["pdf", "doc", "docx", "xls", "xlsx"].includes(ext)) return "document";
+        return "other";
     }
 
     function escapeHtml(value) {
@@ -622,7 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${missingNote}
             </div>`;
         } 
-        else if (mediaType === "pdf") {
+        else if (mediaType === "document") {
             return `<div class="media"><a href="media/${displayName}" target="_blank">${displayName}</a>${missingNote}</div>`;
         } 
         else {

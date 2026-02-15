@@ -4,12 +4,9 @@
   "platform": "generic",
   "_optional": {
     "top_level": ["source", "platform", "metadata", "chat_name"],
-    "metadata": ["is_group_chat"],
     "message": ["media", "url", "is_owner", "chat"]
   },
-  "metadata": {
-    "is_group_chat": true
-  },
+  "metadata": {},
   "messages": [
     {
       "sender": "Alice",

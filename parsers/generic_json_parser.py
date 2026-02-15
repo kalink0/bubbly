@@ -21,7 +21,6 @@ class GenericJsonParser:
         "messages_key": "Optional. Key holding messages list (default: messages).",
         "metadata_key": "Optional. Key holding metadata dict (default: metadata).",
         "account_name": "Optional. Owner display name for is_owner detection.",
-        "is_group_chat": "Optional. true or false to override auto-detect.",
     }
 
     def parse(
@@ -64,7 +63,6 @@ class GenericJsonParser:
             "case": kwargs.get("case"),
             "chat_name": chat_name,
             "source": metadata_raw.get("source") or "Generic JSON",
-            "is_group_chat": self._infer_group_chat(metadata_raw, kwargs),
             "platform": metadata_raw.get("platform") or "generic",
         }
 
@@ -233,11 +231,3 @@ class GenericJsonParser:
                     if isinstance(path, str):
                         return None if "File not included" in path else path
         return None
-
-    def _infer_group_chat(self, metadata: Dict[str, Any], kwargs: Dict[str, Any]) -> bool:
-        if "is_group_chat" in kwargs:
-            return bool(kwargs.get("is_group_chat"))
-        value = metadata.get("is_group_chat")
-        if isinstance(value, bool):
-            return value
-        return False

@@ -6,12 +6,13 @@ import mimetypes
 from bubbly_version import BUBBLY_VERSION
 
 class BubblyExporter:
-    def __init__(self, messages, media_folder, output_folder, metadata, templates_folder):
+    def __init__(self, messages, media_folder, output_folder, metadata, templates_folder, logo_path=None):
         self.messages = messages
         self.media_folder = Path(media_folder)
         self.output_folder = Path(output_folder)
         self.metadata = metadata
         self.templates_folder = Path(templates_folder)
+        self.logo_path = Path(logo_path) if logo_path else None
         self.output_folder.mkdir(parents=True, exist_ok=True)
         (self.output_folder / "media").mkdir(exist_ok=True)
 
@@ -94,8 +95,15 @@ class BubblyExporter:
             return "audio/wav"
         if len(header) >= 12 and header[4:8] == b"ftyp":
             brand = header[8:12]
-            if brand in {b"M4A ", b"isom", b"mp41", b"mp42"}:
+            suffix = path.suffix.lower()
+            if brand == b"M4A ":
                 return "audio/mp4"
+            # `isom/mp41/mp42` are common for both audio and video MP4 containers.
+            # Prefer extension-based disambiguation to avoid classifying videos as audio.
+            if brand in {b"isom", b"mp41", b"mp42"}:
+                if suffix in {".m4a", ".aac"}:
+                    return "audio/mp4"
+                return "video/mp4"
             if brand in {b"qt  "}:
                 return "video/quicktime"
             return "video/mp4"
@@ -140,12 +148,24 @@ class BubblyExporter:
                 "timestamp": msg["timestamp"],
                 "media": msg.get("media"),
                 "is_owner": msg.get("is_owner"),
-                "is_group_chat": self.metadata.get("is_group_chat", False),
                 "chat": chat_name
             })
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(messages_json, f, ensure_ascii=False, indent=2)
         return json_path.name
+
+    def _copy_logo(self):
+        if not self.logo_path:
+            return None
+        if not self.logo_path.exists() or not self.logo_path.is_file():
+            return None
+        branding_dir = self.output_folder / "branding"
+        branding_dir.mkdir(exist_ok=True)
+        ext = self.logo_path.suffix or ".png"
+        target_name = f"branding_logo{ext.lower()}"
+        target = branding_dir / target_name
+        shutil.copy(self.logo_path, target)
+        return str(Path("branding") / target_name)
 
     # ----------------------
     # Export HTML
@@ -153,6 +173,7 @@ class BubblyExporter:
     def export_html(self, output_html_name="chat.html"):
         copied_count = self._copy_media()
         json_file = self._export_json()
+        logo_file = self._copy_logo()
         generated_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # ----------------------
@@ -169,7 +190,6 @@ class BubblyExporter:
             ("WhatsApp account number", meta.get("wa_account_number")),
             ("Telegram account name", meta.get("tg_account_name")),
             ("Wire account name", meta.get("wire_account_name")),
-            ("Group chat", meta.get("is_group_chat")),
             ("Platform", meta.get("platform")),
             ("Media files copied", copied_count),
         ]
@@ -187,6 +207,13 @@ class BubblyExporter:
         signature_html = (
             f'<div class="signature">Created with Bubbly v{BUBBLY_VERSION}</div>'
         )
+        branding_html = ""
+        if logo_file:
+            branding_html = (
+                '<div id="brandingLogo" class="branding-logo">'
+                f'<img src="{logo_file}" alt="Brand logo">'
+                "</div>"
+            )
 
         # ----------------------
         # Load templates
@@ -215,6 +242,8 @@ class BubblyExporter:
             "{{header}}", header_html
         ).replace(
             "{{signature}}", signature_html
+        ).replace(
+            "{{branding_logo}}", branding_html
         ).replace(
             #"{{messages_json_path}}", json_file
             "{{messages_json_content}}", json.dumps(messages_for_html, ensure_ascii=False)

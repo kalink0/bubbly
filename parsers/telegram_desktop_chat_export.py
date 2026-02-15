@@ -19,7 +19,6 @@ class TelegramDesktopChatExportParser:
     """
     PARSER_ARGS = {
         "tg_account_name": "Optional. Account display name for is_owner detection.",
-        "is_group_chat": "Optional. true or false to override auto-detect.",
     }
 
     def parse(
@@ -70,7 +69,6 @@ class TelegramDesktopChatExportParser:
             "chat_name": chat_name,
             "source": "Telegram",
             "tg_account_name": tg_account_name,
-            "is_group_chat": self._infer_group_chat(data, kwargs),
             "platform": "desktop",
         }
 
@@ -126,14 +124,6 @@ class TelegramDesktopChatExportParser:
         url_pattern = re.compile(r"https?://\\S+")
         match = url_pattern.search(content or "")
         return match.group(0) if match else None
-
-    def _infer_group_chat(self, data: Dict[str, Any], kwargs: Dict[str, Any]) -> bool:
-        if "is_group_chat" in kwargs:
-            return bool(kwargs.get("is_group_chat"))
-        chat_type = data.get("type")
-        if not chat_type:
-            return False
-        return chat_type not in {"personal_chat", "private_chat", "saved_messages"}
 
     def _normalize_timestamp(self, value: Any) -> str:
         if not isinstance(value, str):

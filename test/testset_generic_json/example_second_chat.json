@@ -4,7 +4,6 @@
   "platform": "generic",
   "_optional": {
     "top_level": ["source", "platform", "metadata", "chat_name"],
-    "metadata": ["is_group_chat"],
     "message": ["media", "url", "is_owner", "chat"]
   },
 

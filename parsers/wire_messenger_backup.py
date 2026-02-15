@@ -21,9 +21,7 @@ class WireMessengerBackupParser:
     """
     Parser for Wire Messenger unencrypted backups (.binpb protobuf files).
     """
-    PARSER_ARGS = {
-        "chat_name": "Optional. Overrides chat name in report header.",
-    }
+    PARSER_ARGS = {}
 
     def parse(
         self,
@@ -47,7 +45,7 @@ class WireMessengerBackupParser:
         for msg in messages:
             sender_id = self._normalize_id(msg.get("3"))
             conversation_id = self._normalize_id(msg.get("5"))
-            chat_name = conv_map.get(conversation_id) or kwargs.get("chat_name") or conversation_id or "Chat"
+            chat_name = conv_map.get(conversation_id) or conversation_id or "Chat"
 
             timestamp_ms = msg.get("2")
             timestamp = self._format_timestamp(timestamp_ms)
@@ -68,13 +66,24 @@ class WireMessengerBackupParser:
                 "chat": chat_name,
             })
 
+        unique_chats = sorted(
+            {
+                str(entry.get("chat") or "").strip()
+                for entry in parsed_messages
+                if str(entry.get("chat") or "").strip()
+            }
+        )
+        if len(unique_chats) == 1:
+            header_chat_name = unique_chats[0]
+        else:
+            header_chat_name = "Wire Backup"
+
         metadata = {
             "user": kwargs.get("user"),
             "case": kwargs.get("case"),
-            "chat_name": kwargs.get("chat_name"),
+            "chat_name": header_chat_name,
             "source": "Wire Messenger",
             "platform": "desktop",
-            "is_group_chat": None,
             "wire_account_name": owner_name,
         }
 

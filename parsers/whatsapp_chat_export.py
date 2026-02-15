@@ -20,7 +20,6 @@ class WhatsAppChatExportParser:
         "platform": "Required. 'ios' or 'android'.",
         "wa_account_name": "Optional. Account display name for is_owner detection.",
         "wa_account_number": "Optional. Account phone number (string).",
-        "is_group_chat": "Optional. true or false. Default: false.",
         "chat_name": "Optional. Overrides chat name in report header.",
     }
     def parse(
@@ -30,7 +29,6 @@ class WhatsAppChatExportParser:
         platform: str,
         wa_account_name: str = "",
         wa_account_number: str = "",
-        is_group_chat: bool = False,
         **kwargs
     ) -> Tuple[List[Dict], Dict]:
         """
@@ -62,7 +60,6 @@ class WhatsAppChatExportParser:
             "source": "WhatsApp",
             "wa_account_name": wa_account_name,
             "wa_account_number": wa_account_number,
-            "is_group_chat": is_group_chat,
             "platform": platform
         }
 

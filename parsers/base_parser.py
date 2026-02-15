@@ -11,7 +11,7 @@ class BaseParser(ABC):
         Parse the chat export.
         Returns:
         - messages: list of dicts {id, sender, timestamp, content, media, url}
-        - metadata: dict {chat_name, user, source, is_group_chat, ...}
+        - metadata: dict {chat_name, user, source, ...}
 
         kwargs: parser-specific options
         """

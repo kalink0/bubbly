@@ -2,7 +2,12 @@ Bubbly – Bubble your chats
 
 ## Overview
 
-Bubbly generates an HTML report with search, filters, time filtering, and media previews in bubble view for chats from different messengers/exports. It currently supports:
+Bubbly generates an interactive HTML chat view with search, filters, time filtering, and media previews for chats from different messengers/exports.
+
+Limitation:
+- No print/PDF report export functionality is currently included in Bubbly.
+
+It currently supports:
 
 - WhatsApp chat exports (iOS and Android)
 - Telegram Desktop exports (JSON)
@@ -31,8 +36,9 @@ python messenger/bubbly/bubbly_launcher.py \
   --output /path/to/output \
   --creator "Analyst Name" \
   --case CASE-123 \
+  --logo /path/to/logo.png \
   --templates_folder messenger/bubbly/templates \
-  --parser_args platform=android wa_account_name="Owner Name" wa_account_number="+123" is_group_chat=false
+  --parser_args platform=android wa_account_name="Owner Name" wa_account_number="+123"
 ```
 
 Short flag equivalent:
@@ -44,8 +50,9 @@ python messenger/bubbly/bubbly_launcher.py \
   -o /path/to/output \
   -u "Analyst Name" \
   -k CASE-123 \
+  --logo /path/to/logo.png \
   -t messenger/bubbly/templates \
-  -a platform=android wa_account_name="Owner Name" wa_account_number="+123" is_group_chat=false
+  -a platform=android wa_account_name="Owner Name" wa_account_number="+123"
 ```
 
 Config file usage (optional `default_conf.json` next to the launcher, or `--config` to point to another file). CLI args override config values. `parser_args` merges config and CLI (CLI wins on conflicts).
@@ -63,12 +70,13 @@ Example config:
   "output": "/path/to/output",
   "creator": "Analyst Name",
   "case": "CASE-123",
+  "logo": "/path/to/logo.png",
+  "split_by_chat": true,
   "templates_folder": "messenger/bubbly/templates",
   "parser_args": {
     "platform": "android",
     "wa_account_name": "Owner Name",
     "wa_account_number": "+123",
-    "is_group_chat": false,
     "chat_name": "Chat Export"
   }
 }
@@ -76,13 +84,14 @@ Example config:
 
 Notes:
 - `--parser` / `-p` must be one of: `whatsapp_export`, `telegram_desktop_export`, `wire_messenger_backup`, `threema_messenger_backup`, `generic_json`.
+- Split-by-chat export is the default. Use `--no-split-by-chat` (or config `split_by_chat: false`) for a single merged HTML.
 - `parser_args` are parser-specific.
-  - For WhatsApp Chat Exports: `platform`, `wa_account_name` (optional), `wa_account_number` (optional), `is_group_chat` (default: false), `chat_name` (optional).
-  - For Telegram Desktop exports (JSON): `tg_account_name`, `chat_name`, `is_group_chat` (optional override).
-  - For Wire Messenger backups: `chat_name` (optional override). Only unencrypted backups are supported.
-  - For Threema Messenger backups: `threema_account_name` (optional), `chat_name` (optional override), `is_group_chat` (default: false).
+  - For WhatsApp Chat Exports: `platform`, `wa_account_name` (optional), `wa_account_number` (optional), `chat_name` (optional).
+  - For Telegram Desktop exports (JSON): `tg_account_name`.
+  - For Wire Messenger backups: no parser-specific args. Only unencrypted backups are supported.
+  - For Threema Messenger backups: `threema_account_name` (optional).
     Threema exports are typically password-encrypted ZIP files; Bubbly currently expects the already decrypted/extracted backup contents (CSV/media files).
-  - For Generic JSON: `json_file` (optional), `messages_key` (optional), `metadata_key` (optional), `account_name` (optional), `is_group_chat` (optional override).
+  - For Generic JSON: `json_file` (optional), `messages_key` (optional), `metadata_key` (optional), `account_name` (optional).
 
 ## Generic JSON schema
 
@@ -103,7 +112,7 @@ Optional (per message):
 
 Optional (top-level):
 - `chat_name`
-- `metadata` (object; may include `is_group_chat`)
+- `metadata` (object)
 - `source`
 - `platform`
 

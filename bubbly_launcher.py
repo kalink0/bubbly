@@ -11,7 +11,7 @@ from parsers.telegram_desktop_chat_export import TelegramDesktopChatExportParser
 from parsers.wire_messenger_backup import WireMessengerBackupParser
 from parsers.threema_messenger_backup import ThreemaMessengerBackupParser
 from parsers.generic_json_parser import GenericJsonParser
-from utils import normalize_user_path, prepare_input_generic, run_interactive_wizard
+from utils import normalize_user_path, prepare_input_generic, run_interactive_wizard, write_split_index
 
 # ----------------------
 # Parser registry
@@ -76,6 +76,8 @@ def apply_config(parser, config):
         "creator",
         "case",
         "templates_folder",
+        "logo",
+        "split_by_chat",
         "parser_args",
     ):
         if key in config:
@@ -88,6 +90,7 @@ def apply_config(parser, config):
 # ----------------------
 def parse_args():
     parser = argparse.ArgumentParser(description="Bubbly Launcher - Chat Export Viewer")
+    parser.set_defaults(split_by_chat=True)
     parser.add_argument("-f", "--config", help="Path to JSON config file")
     parser.add_argument("-p", "--parser", help="Parser name")
     parser.add_argument("-i", "--input", help="Input file/folder/zip")
@@ -95,6 +98,13 @@ def parse_args():
     parser.add_argument("-u", "--creator", help="User generating the report")
     parser.add_argument("-k", "--case", help="Case number")
     parser.add_argument("-t", "--templates_folder", help="Path to templates folder")
+    parser.add_argument("--logo", help="Optional branding logo image path")
+    parser.add_argument(
+        "--no-split-by-chat",
+        dest="split_by_chat",
+        action="store_false",
+        help="Generate one merged HTML instead of per-chat files",
+    )
     parser.add_argument("-a", "--parser_args", nargs="*", help="Parser-specific args as key=value pairs")
     parser.add_argument(
         "-s",
@@ -170,6 +180,151 @@ def parse_parser_args(parser_args_list):
     return parsed_parser_args
 
 
+def _safe_slug(value, fallback="chat"):
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value or "")).strip("._-")
+    if not slug:
+        return fallback
+    return slug
+
+
+def _group_messages_by_chat(messages, default_chat_name):
+    groups = {}
+    for msg in messages:
+        chat_name = str(msg.get("chat") or default_chat_name or "Chat").strip() or "Chat"
+        groups.setdefault(chat_name, []).append(msg)
+    return groups
+
+
+def _export_split_by_chat(messages, metadata, media_folder, output_folder, templates_folder, logo_path, safe_case):
+    chat_groups = _group_messages_by_chat(messages, metadata.get("chat_name"))
+    used_names = set()
+    reports = []
+    split_folder_name = "reports"
+    split_output_folder = output_folder / split_folder_name
+    split_output_folder.mkdir(parents=True, exist_ok=True)
+
+    for chat_name, chat_messages in chat_groups.items():
+        chat_slug = _safe_slug(chat_name, "chat")
+        base_name = f"{safe_case}_{chat_slug}"
+        file_name = f"{base_name}.html"
+        counter = 2
+        while file_name in used_names:
+            file_name = f"{base_name}_{counter}.html"
+            counter += 1
+        used_names.add(file_name)
+
+        chat_meta = dict(metadata)
+        chat_meta["chat_name"] = chat_name
+        exporter = BubblyExporter(
+            chat_messages,
+            media_folder,
+            split_output_folder,
+            chat_meta,
+            templates_folder=templates_folder,
+            logo_path=logo_path,
+        )
+        exporter.export_html(output_html_name=file_name)
+        media_count = len(
+            {
+                str(msg.get("media") or "").strip()
+                for msg in chat_messages
+                if str(msg.get("media") or "").strip()
+                and not str(msg.get("media") or "").strip().startswith("missing:")
+            }
+        )
+        reports.append(
+            {
+                "chat_name": chat_name,
+                "file_name": file_name,
+                "file_href": f"{split_folder_name}/{file_name}",
+                "message_count": len(chat_messages),
+                "media_count": media_count,
+            }
+        )
+
+    if reports:
+        write_split_index(
+            output_folder,
+            safe_case,
+            reports,
+            metadata.get("case"),
+            creator=metadata.get("user"),
+            logo_path=logo_path,
+            created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
+        print(f"Index saved to {output_folder / f'{safe_case}_index.html'}")
+
+
+def _print_cli_summary(messages, metadata, output_folder):
+    def media_category(msg):
+        media = str(msg.get("media") or "").strip()
+        if media.startswith("missing:"):
+            return "missing"
+
+        mime = str(msg.get("media_mime") or "").lower().strip()
+        if mime.startswith("image/"):
+            return "image"
+        if mime.startswith("video/"):
+            return "video"
+        if mime.startswith("audio/"):
+            return "audio"
+        if mime in {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }:
+            return "document"
+
+        ext = media.rsplit(".", 1)[-1].lower() if "." in media else ""
+        if ext in {"jpg", "jpeg", "png", "gif", "webp"}:
+            return "image"
+        if ext in {"mp4", "mov", "webm", "3gp"}:
+            return "video"
+        if ext in {"mp3", "wav", "m4a", "aac", "opus", "ogg"}:
+            return "audio"
+        if ext in {"pdf", "doc", "docx", "xls", "xlsx"}:
+            return "document"
+        return "other"
+
+    total_messages = len(messages or [])
+    default_chat = str((metadata or {}).get("chat_name") or "Chat").strip() or "Chat"
+    chats = {
+        str(msg.get("chat") or default_chat).strip() or default_chat
+        for msg in (messages or [])
+    }
+    media_files = {}
+    for msg in (messages or []):
+        media = msg.get("media")
+        if not media:
+            continue
+        media_text = str(media).strip()
+        if not media_text:
+            continue
+        if media_text not in media_files:
+            media_files[media_text] = media_category(msg)
+
+    found_media_files = {name for name in media_files if not name.startswith("missing:")}
+    media_type_counts = {"audio": 0, "video": 0, "image": 0, "document": 0, "other": 0, "missing": 0}
+    for category in media_files.values():
+        media_type_counts[category] += 1
+
+    print("Summary:")
+    print(f" - Messages: {total_messages}")
+    print(f" - Chats: {len(chats)}")
+    print(f" - Found media files: {len(found_media_files)}")
+    print(
+        " - Media by type: "
+        f"audio={media_type_counts['audio']}, "
+        f"video={media_type_counts['video']}, "
+        f"image={media_type_counts['image']}, "
+        f"document={media_type_counts['document']}, "
+        f"other={media_type_counts['other']}, "
+        f"missing={media_type_counts['missing']}"
+    )
+
+
 # ----------------------
 # Main
 # ----------------------
@@ -178,6 +333,8 @@ def main():
     args = parse_args()
     args.output = str(normalize_user_path(args.output, must_exist=False))
     args.templates_folder = str(normalize_user_path(args.templates_folder, must_exist=False))
+    if getattr(args, "logo", None):
+        args.logo = str(normalize_user_path(args.logo, must_exist=True))
     parser_class = PARSERS.get(args.parser)
     if not parser_class:
         raise ValueError(f"Unknown parser {args.parser}. Available: {list(PARSERS.keys())}")
@@ -213,46 +370,51 @@ def main():
         json_file = parser_kwargs.get("json_file")
         json_paths = parser_instance.resolve_json_paths(input_path, json_file=json_file)
 
-        combined_messages = []
-        combined_metadata = None
-        any_group_chat = False
+        messages_all = []
+        metadata_all = None
 
         for json_path in json_paths:
             run_kwargs = dict(parser_kwargs)
 
             messages, metadata = parser_instance.parse(json_path, media_folder, **run_kwargs)
-            combined_messages.extend(messages)
-            any_group_chat = any_group_chat or bool(metadata.get("is_group_chat"))
-            if combined_metadata is None:
-                combined_metadata = metadata
+            messages_all.extend(messages)
+            if metadata_all is None:
+                metadata_all = metadata
 
-        if combined_metadata is None:
+        if metadata_all is None:
             raise ValueError("No JSON messages found to export")
 
-        if len(json_paths) > 1:
-            combined_metadata = dict(combined_metadata)
-            combined_metadata["chat_name"] = "Multiple chats"
-            combined_metadata["is_group_chat"] = any_group_chat
-
-        output_folder = output_base
-        output_html_name = f"{safe_case}_report.html"
-        exporter = BubblyExporter(
-            combined_messages,
-            media_folder,
-            output_folder,
-            combined_metadata,
-            templates_folder=args.templates_folder,
-        )
-        exporter.export_html(output_html_name=output_html_name)
+        metadata_all = dict(metadata_all)
+        if len(json_paths) > 1 and not args.split_by_chat:
+            metadata_all["chat_name"] = "Multiple chats"
    
     else:
         # Parsing and exporting for all other parsers
-        messages, metadata = parser_instance.parse(input_path, media_folder, **parser_kwargs)
+        messages_all, metadata_all = parser_instance.parse(input_path, media_folder, **parser_kwargs)
 
-        output_folder = output_base
+    output_folder = output_base
+    if args.split_by_chat:
+        _export_split_by_chat(
+            messages_all,
+            metadata_all,
+            media_folder,
+            output_folder,
+            args.templates_folder,
+            args.logo,
+            safe_case,
+        )
+    else:
         output_html_name = f"{safe_case}_report.html"
-        exporter = BubblyExporter(messages, media_folder, output_folder, metadata, templates_folder=args.templates_folder)
+        exporter = BubblyExporter(
+            messages_all,
+            media_folder,
+            output_folder,
+            metadata_all,
+            templates_folder=args.templates_folder,
+            logo_path=args.logo,
+        )
         exporter.export_html(output_html_name=output_html_name)
+    _print_cli_summary(messages_all, metadata_all, output_folder)
 
 if __name__ == "__main__":
     main()
