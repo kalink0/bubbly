@@ -65,14 +65,10 @@ jobs:
       - name: Run parser tests
         run: python test/run_tests.py
 
-  build:
-    name: Build Executables
+  build-linux:
+    name: Build Linux
     needs: quality
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -83,16 +79,9 @@ jobs:
           python-version: "3.11"
 
       - name: Build Linux executable
-        if: runner.os == 'Linux'
         run: bash build/build_linux.sh
 
-      - name: Build Windows executable
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ./build/build_windows.ps1
-
       - name: Upload Linux artifacts
-        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: bubbly-linux
@@ -101,8 +90,24 @@ jobs:
             build/dist/linux/default_conf.json
           retention-days: 7
 
+  build-windows:
+    name: Build Windows
+    needs: quality
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build Windows executable
+        shell: pwsh
+        run: ./build/build_windows.ps1
+
       - name: Upload Windows artifacts
-        if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: bubbly-windows
