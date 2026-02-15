@@ -104,6 +104,7 @@ jobs:
           path: |
             build/dist/linux/bubbly_*
             build/dist/linux/default_conf.json
+            build/dist/linux/README_release.txt
           retention-days: 1
 
   build-windows:
@@ -130,4 +131,5 @@ jobs:
           path: |
             build/dist/windows/bubbly_*.exe
             build/dist/windows/default_conf.json
+            build/dist/windows/README_release.txt
           retention-days: 1
