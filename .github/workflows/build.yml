@@ -60,7 +60,7 @@ jobs:
 
       - name: Lint (advisory)
         continue-on-error: true
-        run: PYTHONPATH=. pylint $(find . -name "*.py" -not -path "./.venv/*" -not -path "./venv/*")
+        run: PYTHONPATH=. pylint --exit-zero $(find . -name "*.py" -not -path "./.venv/*" -not -path "./venv/*")
 
       - name: Run parser tests
         run: python test/run_tests.py

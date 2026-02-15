@@ -1,6 +1,7 @@
 """CLI launcher for parsing chat exports and generating Bubbly reports."""
 
 import re
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -13,12 +14,14 @@ from parsers.wire_messenger_backup import WireMessengerBackupParser
 from parsers.whatsapp_chat_export import WhatsAppChatExportParser
 from utils import (
     RunLogger,
+    collect_processed_files,
     export_split_by_chat,
     normalize_user_path,
     parse_args,
     parse_parser_args,
     prepare_input_generic,
     print_cli_summary,
+    write_fallback_exception_log,
 )
 
 
@@ -51,95 +54,114 @@ def print_banner():
 
 def main():
     """Run the end-to-end launcher flow: parse, export, and log execution."""
-    args = parse_args(PARSERS)
-    args.output = str(normalize_user_path(args.output, must_exist=False))
-    if getattr(args, "logo", None):
-        args.logo = str(normalize_user_path(args.logo, must_exist=True))
-    parser_class = PARSERS.get(args.parser)
-    if not parser_class:
-        raise ValueError(f"Unknown parser {args.parser}. Available: {list(PARSERS.keys())}")
+    output_base = None
+    try:
+        args = parse_args(PARSERS)
+        args.output = str(normalize_user_path(args.output, must_exist=False))
+        if getattr(args, "logo", None):
+            args.logo = str(normalize_user_path(args.logo, must_exist=True))
+        parser_class = PARSERS.get(args.parser)
+        if not parser_class:
+            raise ValueError(f"Unknown parser {args.parser}. Available: {list(PARSERS.keys())}")
 
-    input_path, media_folder = prepare_input_generic(args.input)
+        input_path, media_folder = prepare_input_generic(args.input)
 
-    config_parser_args = {}
-    if isinstance(getattr(args, "_config", None), dict):
-        config_parser_args = parse_parser_args(args._config.get("parser_args"))
-    cli_parser_args = parse_parser_args(args.parser_args)
-    parser_kwargs = {**config_parser_args, **cli_parser_args}
-    parser_kwargs.update({
-        "user": args.creator,
-        "case": args.case,
-        "chat_name": parser_kwargs.get("chat_name"),
-    })
+        config_parser_args = {}
+        if isinstance(getattr(args, "_config", None), dict):
+            config_parser_args = parse_parser_args(args._config.get("parser_args"))
+        cli_parser_args = parse_parser_args(args.parser_args)
+        parser_kwargs = {**config_parser_args, **cli_parser_args}
+        parser_kwargs.update({
+            "user": args.creator,
+            "case": args.case,
+            "chat_name": parser_kwargs.get("chat_name"),
+        })
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_base = Path(args.output) / f"bubbly_{timestamp}"
-    safe_case = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(args.case)).strip("._-")
-    if not safe_case:
-        safe_case = "case"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_base = Path(args.output) / f"bubbly_{timestamp}"
+        safe_case = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(args.case)).strip("._-")
+        if not safe_case:
+            safe_case = "case"
 
-    with RunLogger(
-        output_base=output_base,
-        args=args,
-        config_parser_args=config_parser_args,
-        cli_parser_args=cli_parser_args,
-        parser_kwargs=parser_kwargs,
-    ):
-        print_banner()
-        parser_instance = parser_class()
+        with RunLogger(
+            output_base=output_base,
+            args=args,
+            config_parser_args=config_parser_args,
+            cli_parser_args=cli_parser_args,
+            parser_kwargs=parser_kwargs,
+            log_level=args.log_level,
+        ):
+            print_banner()
+            parser_instance = parser_class()
 
-        if parser_class is GenericJsonParser:
-            json_file = parser_kwargs.get("json_file")
-            json_paths = parser_instance.resolve_json_paths(input_path, json_file=json_file)
-            messages_all = []
-            metadata_all = None
+            if parser_class is GenericJsonParser:
+                json_file = parser_kwargs.get("json_file")
+                json_paths = parser_instance.resolve_json_paths(input_path, json_file=json_file)
+                processed_files = collect_processed_files(args.parser, input_path, json_paths=json_paths)
+                print(f"Processed source files ({len(processed_files)}):")
+                for file_path in processed_files:
+                    print(f" - {file_path}")
+                messages_all = []
+                metadata_all = None
 
-            for json_path in json_paths:
-                run_kwargs = dict(parser_kwargs)
-                messages, metadata = parser_instance.parse(
-                    json_path,
-                    media_folder=media_folder,
-                    **run_kwargs,
-                )
-                messages_all.extend(messages)
+                for json_path in json_paths:
+                    run_kwargs = dict(parser_kwargs)
+                    messages, metadata = parser_instance.parse(
+                        json_path,
+                        media_folder=media_folder,
+                        **run_kwargs,
+                    )
+                    messages_all.extend(messages)
+                    if metadata_all is None:
+                        metadata_all = metadata
+
                 if metadata_all is None:
-                    metadata_all = metadata
+                    raise ValueError("No JSON messages found to export")
 
-            if metadata_all is None:
-                raise ValueError("No JSON messages found to export")
+                metadata_all = dict(metadata_all)
+                if len(json_paths) > 1 and not args.split_by_chat:
+                    metadata_all["chat_name"] = "Multiple chats"
+            else:
+                processed_files = collect_processed_files(args.parser, input_path)
+                print(f"Processed source files ({len(processed_files)}):")
+                for file_path in processed_files:
+                    print(f" - {file_path}")
+                messages_all, metadata_all = parser_instance.parse(
+                    input_path,
+                    media_folder=media_folder,
+                    **parser_kwargs,
+                )
 
-            metadata_all = dict(metadata_all)
-            if len(json_paths) > 1 and not args.split_by_chat:
-                metadata_all["chat_name"] = "Multiple chats"
-        else:
-            messages_all, metadata_all = parser_instance.parse(
-                input_path,
-                media_folder=media_folder,
-                **parser_kwargs,
-            )
+            output_folder = output_base
+            if args.split_by_chat:
+                export_split_by_chat(
+                    messages_all,
+                    metadata_all,
+                    media_folder,
+                    output_folder,
+                    args.logo,
+                    safe_case,
+                )
+            else:
+                output_html_name = f"{safe_case}_report.html"
+                exporter = BubblyExporter(
+                    messages_all,
+                    media_folder,
+                    output_folder,
+                    metadata_all,
+                    logo_path=args.logo,
+                )
+                exporter.export_html(output_html_name=output_html_name)
 
-        output_folder = output_base
-        if args.split_by_chat:
-            export_split_by_chat(
-                messages_all,
-                metadata_all,
-                media_folder,
-                output_folder,
-                args.logo,
-                safe_case,
-            )
-        else:
-            output_html_name = f"{safe_case}_report.html"
-            exporter = BubblyExporter(
-                messages_all,
-                media_folder,
-                output_folder,
-                metadata_all,
-                logo_path=args.logo,
-            )
-            exporter.export_html(output_html_name=output_html_name)
-
-        print_cli_summary(messages_all, metadata_all)
+            print_cli_summary(messages_all, metadata_all)
+    except SystemExit:
+        raise
+    except Exception as exc:
+        fallback_base = (output_base / "log") if output_base is not None else None
+        log_path = write_fallback_exception_log(exc, output_base=fallback_base)
+        print(f"ERROR: {exc}", file=sys.stderr)
+        print(f"Error log: {log_path}", file=sys.stderr)
+        raise
 
 
 if __name__ == "__main__":

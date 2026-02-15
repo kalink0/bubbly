@@ -3,6 +3,7 @@
 import json
 import logging
 import sys
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -42,13 +43,14 @@ class _LoggingStream:
 class RunLogger:
     """Context manager that configures run logging for console and file output."""
 
-    def __init__(self, output_base, args, config_parser_args, cli_parser_args, parser_kwargs):
+    def __init__(self, output_base, args, config_parser_args, cli_parser_args, parser_kwargs, log_level="info"):
         """Store run metadata and output location for logger setup."""
         self.output_base = Path(output_base)
         self.args = args
         self.config_parser_args = config_parser_args
         self.cli_parser_args = cli_parser_args
         self.parser_kwargs = parser_kwargs
+        self.log_level = str(log_level or "info").upper()
         self.logger = None
         self.file_handler = None
         self.log_path = None
@@ -66,7 +68,8 @@ class RunLogger:
 
         logger_name = f"bubbly.run.{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
         self.logger = logging.getLogger(logger_name)
-        self.logger.setLevel(logging.INFO)
+        resolved_level = getattr(logging, self.log_level, logging.INFO)
+        self.logger.setLevel(resolved_level)
         self.logger.propagate = False
 
         formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
@@ -101,6 +104,8 @@ class RunLogger:
 
     def __exit__(self, exc_type, exc, tb):
         """Restore original streams and close logger handlers."""
+        if exc_type is not None and self.logger is not None:
+            self.logger.exception("Unhandled exception during run", exc_info=(exc_type, exc, tb))
         if sys.stdout is not None and hasattr(sys.stdout, "flush"):
             sys.stdout.flush()
         if sys.stderr is not None and hasattr(sys.stderr, "flush"):
@@ -112,3 +117,16 @@ class RunLogger:
                 handler.close()
                 self.logger.removeHandler(handler)
         return False
+
+
+def write_fallback_exception_log(exc, output_base=None):
+    """Write an emergency exception log when RunLogger is not active yet."""
+    base_dir = Path(output_base) if output_base else (Path.cwd() / "bubbly_error_logs")
+    base_dir.mkdir(parents=True, exist_ok=True)
+    log_path = base_dir / f"bubbly_error_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    with log_path.open("w", encoding="utf-8") as handle:
+        handle.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        handle.write(f"Error: {exc.__class__.__name__}: {exc}\n")
+        handle.write("Traceback:\n")
+        handle.write("".join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
+    return log_path

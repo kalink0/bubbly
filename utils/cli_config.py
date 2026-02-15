@@ -39,6 +39,7 @@ def apply_config(parser, config):
         "creator",
         "case",
         "logo",
+        "log_level",
         "split_by_chat",
         "parser_args",
     ):
@@ -76,6 +77,12 @@ def parse_args(parsers):
     parser.add_argument("-u", "--creator", help="User generating the report")
     parser.add_argument("-k", "--case", help="Case number")
     parser.add_argument("--logo", help="Optional branding logo image path")
+    parser.add_argument(
+        "--log-level",
+        default="info",
+        choices=["debug", "info", "warning", "error", "critical"],
+        help="Logger verbosity level (default: info)",
+    )
     parser.add_argument(
         "--no-split-by-chat",
         dest="split_by_chat",
