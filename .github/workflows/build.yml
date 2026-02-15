@@ -1,0 +1,92 @@
+name: Build Bubbly
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+jobs:
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test/quality dependencies
+        run: python -m pip install -r test/requirements.txt
+
+      - name: Bytecode compile check
+        run: |
+          python -m py_compile bubbly_launcher.py
+          python -m py_compile exporter.py
+          python -m py_compile csv_to_bubbly_json.py
+          python -m py_compile utils/interactive_cli.py
+          python -m py_compile utils/index_report.py
+          python -m py_compile parsers/whatsapp_chat_export.py
+          python -m py_compile parsers/telegram_desktop_chat_export.py
+          python -m py_compile parsers/wire_messenger_backup.py
+          python -m py_compile parsers/threema_messenger_backup.py
+          python -m py_compile parsers/generic_json_parser.py
+
+      - name: Lint
+        run: bash test/lint.sh
+
+      - name: Lint (advisory)
+        continue-on-error: true
+        run: PYTHONPATH=. pylint $(find . -name "*.py" -not -path "./.venv/*" -not -path "./venv/*")
+
+      - name: Run parser tests
+        run: python test/run_tests.py
+
+  build:
+    name: Build Executables
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build Linux executable
+        if: runner.os == 'Linux'
+        run: bash build/build_linux.sh
+
+      - name: Build Windows executable
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./build/build_windows.ps1
+
+      - name: Upload Linux artifacts
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bubbly-linux
+          path: |
+            build/dist/linux/bubbly
+            build/dist/linux/default_conf.json
+
+      - name: Upload Windows artifacts
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bubbly-windows
+          path: |
+            build/dist/windows/bubbly.exe
+            build/dist/windows/default_conf.json
