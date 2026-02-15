@@ -1,3 +1,3 @@
 """Shared Bubbly version constant."""
 
-BUBBLY_VERSION = "0.1"
+BUBBLY_VERSION = "1.0.0"

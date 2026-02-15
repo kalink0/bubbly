@@ -21,6 +21,24 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Validate tag version matches BUBBLY_VERSION
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          python - << 'PY'
+          import os
+          from bubbly_version import BUBBLY_VERSION
+
+          tag_name = os.environ["TAG_NAME"]
+          tag_version = tag_name[1:] if tag_name.startswith("v") else tag_name
+          if tag_version != BUBBLY_VERSION:
+              raise SystemExit(
+                  f"Tag/version mismatch: git tag '{tag_name}' != BUBBLY_VERSION '{BUBBLY_VERSION}'"
+              )
+          print(f"Version check OK: {tag_name} matches BUBBLY_VERSION={BUBBLY_VERSION}")
+          PY
+
       - name: Install test/quality dependencies
         run: python -m pip install -r test/requirements.txt
 
