@@ -1,5 +1,7 @@
 Bubbly – Bubble your chats
 
+[![Build Bubbly](https://github.com/kalink0/bubbly/actions/workflows/build.yml/badge.svg)](https://github.com/kalink0/bubbly/actions/workflows/build.yml)
+
 ## Overview
 
 Bubbly generates an interactive HTML chat view with search, filters, time filtering, and media previews for chats from different messengers/exports.
