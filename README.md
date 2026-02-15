@@ -12,7 +12,8 @@ Bubbly – Bubble your chats
 Bubbly generates an interactive HTML chat view with search, filters, time filtering, and media previews for chats from different messengers/exports.
 
 Limitation:
-- No print/PDF report export functionality is currently included in Bubbly.
+- No print/PDF report export functionality is included in Bubbly.
+- Bubbly is focussed on fast and easy visualization of messages themselves. BUT: It shows not all data. It will not be shown if messages are forwarded or answered. Also reactions are not visualized. 
 
 It currently supports:
 
