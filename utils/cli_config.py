@@ -66,7 +66,7 @@ def parse_parser_args(parser_args_list):
     return parsed_parser_args
 
 
-def parse_args(parsers):
+def parse_args(parsers, banner_printer=None):
     """Parse CLI arguments, merge config defaults, and validate required fields."""
     parser = argparse.ArgumentParser(description="Bubbly Launcher - Chat Export Viewer")
     parser.set_defaults(split_by_chat=True)
@@ -133,6 +133,9 @@ def parse_args(parsers):
         raise SystemExit(0)
 
     if args.interactive or len(sys.argv) == 1:
+        if callable(banner_printer):
+            banner_printer()
+            args._banner_shown = True
         return run_interactive_wizard(parser, args, parsers, parse_parser_args)
 
     missing = [

@@ -56,7 +56,7 @@ def main():
     """Run the end-to-end launcher flow: parse, export, and log execution."""
     output_base = None
     try:
-        args = parse_args(PARSERS)
+        args = parse_args(PARSERS, banner_printer=print_banner)
         args.output = str(normalize_user_path(args.output, must_exist=False))
         if getattr(args, "logo", None):
             args.logo = str(normalize_user_path(args.logo, must_exist=True))
@@ -91,7 +91,8 @@ def main():
             parser_kwargs=parser_kwargs,
             log_level=args.log_level,
         ):
-            print_banner()
+            if not getattr(args, "_banner_shown", False):
+                print_banner()
             parser_instance = parser_class()
 
             if parser_class is GenericJsonParser:
