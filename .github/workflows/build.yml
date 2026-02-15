@@ -97,6 +97,16 @@ jobs:
       - name: Build Linux executable
         run: bash build/build_linux.sh
 
+      - name: Add default config to Linux dist
+        run: |
+          test -f default_conf.json
+          cp default_conf.json build/dist/linux/default_conf.json
+
+      - name: Add release readme to Linux dist
+        run: |
+          test -f build/README_release.txt
+          cp build/README_release.txt build/dist/linux/README_release.txt
+
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -123,6 +133,18 @@ jobs:
       - name: Build Windows executable
         shell: pwsh
         run: ./build/build_windows.ps1
+
+      - name: Add default config to Windows dist
+        shell: pwsh
+        run: |
+          if (!(Test-Path 'default_conf.json')) { throw 'Missing default_conf.json' }
+          Copy-Item 'default_conf.json' 'build/dist/windows/default_conf.json' -Force
+
+      - name: Add release readme to Windows dist
+        shell: pwsh
+        run: |
+          if (!(Test-Path 'build/README_release.txt')) { throw 'Missing build/README_release.txt' }
+          Copy-Item 'build/README_release.txt' 'build/dist/windows/README_release.txt' -Force
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
