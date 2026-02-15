@@ -26,9 +26,4 @@ pyinstaller \
   --add-data "${REPO_ROOT}/templates:templates" \
   "${REPO_ROOT}/bubbly_launcher.py"
 
-if [ -f "${REPO_ROOT}/default_conf.json" ]; then
-  cp "${REPO_ROOT}/default_conf.json" "${SCRIPT_DIR}/dist/linux/default_conf.json"
-  echo "Copied: ${SCRIPT_DIR}/dist/linux/default_conf.json"
-fi
-
 echo "Built: ${SCRIPT_DIR}/dist/linux/${BINARY_NAME}"

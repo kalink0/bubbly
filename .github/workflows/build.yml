@@ -97,18 +97,12 @@ jobs:
       - name: Build Linux executable
         run: bash build/build_linux.sh
 
-      - name: Add default config to Linux dist
-        run: |
-          test -f default_conf.json
-          cp default_conf.json build/dist/linux/default_conf.json
-
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bubbly-linux
           path: |
             build/dist/linux/bubbly_*
-            build/dist/linux/default_conf.json
           retention-days: 1
 
   build-windows:
@@ -128,17 +122,10 @@ jobs:
         shell: pwsh
         run: ./build/build_windows.ps1
 
-      - name: Add default config to Windows dist
-        shell: pwsh
-        run: |
-          if (!(Test-Path 'default_conf.json')) { throw 'Missing default_conf.json' }
-          Copy-Item 'default_conf.json' 'build/dist/windows/default_conf.json' -Force
-
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bubbly-windows
           path: |
             build/dist/windows/bubbly_*.exe
-            build/dist/windows/default_conf.json
           retention-days: 1
