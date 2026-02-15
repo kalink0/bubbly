@@ -112,19 +112,19 @@ class TestExportModes(unittest.TestCase):
         return [
             {
                 "sender": "Alice",
-                "content": "Chat one message",
+                "content": "Chat zulu message",
                 "timestamp": "2026-02-01T12:00:00",
                 "media": None,
                 "is_owner": False,
-                "chat": "Chat One",
+                "chat": "Zulu Chat",
             },
             {
                 "sender": "Bob",
-                "content": "Chat two message",
+                "content": "Chat alpha message",
                 "timestamp": "2026-02-01T12:01:00",
                 "media": None,
                 "is_owner": True,
-                "chat": "Chat Two",
+                "chat": "Alpha Chat",
             },
         ]
 
@@ -153,6 +153,8 @@ class TestExportModes(unittest.TestCase):
             self.assertEqual(2, len(report_files))
             report_html = report_files[0].read_text(encoding="utf-8")
             self.assertIn('href="../CASE_EXPORT_index.html"', report_html)
+            index_html = index_path.read_text(encoding="utf-8")
+            self.assertLess(index_html.find("Alpha Chat"), index_html.find("Zulu Chat"))
 
     def test_merged_export_creates_single_html_file(self):
         """Merged export should create one combined report file."""

@@ -2,6 +2,9 @@
 
 import unittest
 import sys
+import json
+import shutil
+import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -44,6 +47,49 @@ class TestGenericJsonParser(unittest.TestCase):
         self.assertTrue(any(m.get("media") == "media/photo_001.png" for m in messages))
         self.assertTrue(any(m.get("is_owner") for m in messages))
 
+    def test_parse_with_custom_messages_and_metadata_keys(self):
+        """Parser should honor non-default messages/metadata key names."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            json_path = tmp_path / "custom.json"
+            payload = {
+                "custom_messages": [
+                    {
+                        "sender": "Alice",
+                        "timestamp": "2026-02-01T12:00:00",
+                        "content": "Hello",
+                        "is_owner": True,
+                    }
+                ],
+                "custom_meta": {"chat_name": "Custom Chat", "source": "Custom Source"},
+            }
+            json_path.write_text(json.dumps(payload), encoding="utf-8")
+            messages, metadata = self.parser.parse(
+                json_path,
+                tmp_path,
+                messages_key="custom_messages",
+                metadata_key="custom_meta",
+                user="Tester",
+                case="CASE-CUSTOM",
+            )
+        self.assertEqual(1, len(messages))
+        self.assertEqual("Custom Chat", metadata["chat_name"])
+        self.assertEqual("Custom Source", metadata["source"])
+
+    def test_invalid_timestamp_raises_value_error(self):
+        """Invalid timestamp format in generic JSON should be rejected."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            json_path = tmp_path / "invalid_ts.json"
+            payload = {
+                "messages": [
+                    {"sender": "Alice", "timestamp": "not-a-time", "content": "X"}
+                ]
+            }
+            json_path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                self.parser.parse(json_path, tmp_path, user="Tester", case="CASE-TS")
+
 
 class TestWhatsAppParser(unittest.TestCase):
     """Tests for WhatsApp export parser behavior against the sample text export."""
@@ -70,6 +116,45 @@ class TestWhatsAppParser(unittest.TestCase):
         self.assertTrue(any(m.get("is_owner") for m in messages))
         self.assertTrue(any(m.get("media") for m in messages))
 
+    def test_parse_android_export(self):
+        """Parser should parse Android format exports and detect media/url fields."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            txt_path = tmp_path / "chat.txt"
+            txt_path.write_text(
+                "\n".join([
+                    "08/02/2026, 08:00 - Alice: Hello Android",
+                    "08/02/2026, 08:01 - M.: image1.jpg",
+                    "08/02/2026, 08:02 - Bob: Link https://example.com",
+                ]),
+                encoding="utf-8",
+            )
+            messages, metadata = self.parser.parse(
+                tmp_path,
+                platform="android",
+                wa_account_name="M.",
+                wa_account_number="+10000000000",
+                user="Tester",
+                case="CASE-AND",
+                chat_name="Android Chat",
+            )
+        self.assertEqual("WhatsApp", metadata["source"])
+        self.assertEqual(3, len(messages))
+        self.assertTrue(any(m.get("media") == "image1.jpg" for m in messages))
+        self.assertTrue(any(m.get("url") == "https://example.com" for m in messages))
+
+    def test_invalid_platform_raises(self):
+        """Unsupported WhatsApp platform should raise ValueError."""
+        with self.assertRaises(ValueError):
+            self.parser.parse(
+                self.input_dir,
+                platform="desktop",
+                wa_account_name="M.",
+                user="Tester",
+                case="CASE-BAD",
+                chat_name="Bad Platform",
+            )
+
 
 class TestTelegramParser(unittest.TestCase):
     """Tests for Telegram Desktop export parser fixture handling."""
@@ -93,6 +178,20 @@ class TestTelegramParser(unittest.TestCase):
         self.assertGreaterEqual(len(messages), 10000)
         self.assertTrue(any(m.get("is_owner") for m in messages))
         self.assertTrue(any(m.get("media") == "media/photo_1.jpg" for m in messages))
+
+    def test_invalid_telegram_timestamp_raises(self):
+        """Invalid Telegram date values should raise ValueError."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            payload = {
+                "name": "Broken Telegram",
+                "messages": [
+                    {"from": "A", "date": "invalid-date", "text": "Hello"}
+                ],
+            }
+            (tmp_path / "result.json").write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                self.parser.parse(tmp_path, tmp_path, tg_account_name="A", user="Tester", case="CASE-TG")
 
 
 class TestThreemaParser(unittest.TestCase):
@@ -120,6 +219,18 @@ class TestThreemaParser(unittest.TestCase):
         self.assertTrue(any(m.get("is_owner") for m in messages))
         self.assertTrue(any(m.get("media") == "message_media_img1" for m in messages))
 
+    def test_default_owner_name_is_me_when_not_provided(self):
+        """Without threema_account_name, outbound messages should use 'Me' as sender."""
+        messages, _ = self.parser.parse(
+            self.input_dir,
+            self.media_dir,
+            user="Tester",
+            case="CASE-4B",
+        )
+        owner_messages = [m for m in messages if m.get("is_owner")]
+        self.assertTrue(owner_messages)
+        self.assertTrue(all(m.get("sender") == "Me" for m in owner_messages[:20]))
+
 
 class TestWireParser(unittest.TestCase):
     """Tests for Wire backup parser fixture handling."""
@@ -144,6 +255,18 @@ class TestWireParser(unittest.TestCase):
         self.assertGreaterEqual(len(chats), 2)
         self.assertTrue(any(m.get("is_owner") for m in messages))
         self.assertTrue(any(m.get("media") == "wire_image.jpg" for m in messages))
+
+    def test_missing_wire_media_marked_as_missing(self):
+        """Missing media file should be marked with missing: prefix."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            copied = tmp_path / "wire"
+            shutil.copytree(self.input_dir, copied)
+            media_file = copied / "wire_image.jpg"
+            if media_file.exists():
+                media_file.unlink()
+            messages, _ = self.parser.parse(copied, copied, user="Tester", case="CASE-5B")
+        self.assertTrue(any(str(m.get("media") or "").startswith("missing:") for m in messages))
 
 
 if __name__ == "__main__":
