@@ -151,6 +151,8 @@ class TestExportModes(unittest.TestCase):
 
             report_files = sorted((output_folder / "reports").glob("*.html"))
             self.assertEqual(2, len(report_files))
+            report_html = report_files[0].read_text(encoding="utf-8")
+            self.assertIn('href="../CASE_EXPORT_index.html"', report_html)
 
     def test_merged_export_creates_single_html_file(self):
         """Merged export should create one combined report file."""

@@ -1,2 +1,3 @@
 # Build-time dependencies only
 pyinstaller
+pyreadline3; platform_system == "Windows"

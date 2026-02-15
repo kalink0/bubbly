@@ -36,6 +36,10 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; }
     background: #fff;
     cursor: pointer;
 }
+.home-button {
+    text-decoration: none;
+    color: #111;
+}
 .annotation-feedback {
     font-size: 0.85em;
     color: #444;

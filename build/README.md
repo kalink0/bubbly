@@ -11,7 +11,7 @@ bash build/build_linux.sh
 ```
 
 Output:
-- `build/dist/linux/bubbly`
+- `build/dist/linux/bubbly_<version-or-tag>`
 
 ## Windows
 
@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -File .\build\build_windows.ps1
 ```
 
 Output:
-- `build/dist/windows/bubbly.exe`
+- `build/dist/windows/bubbly_<version-or-tag>.exe`
 
 ## Notes
 

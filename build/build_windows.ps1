@@ -5,11 +5,14 @@ $RepoRoot = Resolve-Path (Join-Path $ScriptDir '..')
 
 python -m pip install -r (Join-Path $ScriptDir 'requirements.txt')
 
+$Version = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "v$(python -c "from bubbly_version import BUBBLY_VERSION; print(BUBBLY_VERSION)")" }
+$BinaryName = "bubbly_$Version"
+
 pyinstaller `
   --noconfirm `
   --clean `
   --onefile `
-  --name bubbly `
+  --name $BinaryName `
   --paths $RepoRoot `
   --hidden-import bubbly_version `
   --distpath (Join-Path $ScriptDir 'dist/windows') `
@@ -23,4 +26,4 @@ if (Test-Path (Join-Path $RepoRoot 'default_conf.json')) {
   Write-Host "Copied: $(Join-Path $ScriptDir 'dist/windows/default_conf.json')"
 }
 
-Write-Host "Built: $(Join-Path $ScriptDir 'dist/windows/bubbly.exe')"
+Write-Host "Built: $(Join-Path $ScriptDir "dist/windows/$BinaryName.exe")"

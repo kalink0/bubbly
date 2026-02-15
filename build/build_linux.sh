@@ -6,11 +6,14 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 python -m pip install -r "${SCRIPT_DIR}/requirements.txt"
 
+VERSION="${GITHUB_REF_NAME:-v$(python -c 'from bubbly_version import BUBBLY_VERSION; print(BUBBLY_VERSION)')}"
+BINARY_NAME="bubbly_${VERSION}"
+
 pyinstaller \
   --noconfirm \
   --clean \
   --onefile \
-  --name bubbly \
+  --name "${BINARY_NAME}" \
   --paths "${REPO_ROOT}" \
   --hidden-import bubbly_version \
   --distpath "${SCRIPT_DIR}/dist/linux" \
@@ -24,4 +27,4 @@ if [ -f "${REPO_ROOT}/default_conf.json" ]; then
   echo "Copied: ${SCRIPT_DIR}/dist/linux/default_conf.json"
 fi
 
-echo "Built: ${SCRIPT_DIR}/dist/linux/bubbly"
+echo "Built: ${SCRIPT_DIR}/dist/linux/${BINARY_NAME}"

@@ -102,7 +102,7 @@ jobs:
         with:
           name: bubbly-linux
           path: |
-            build/dist/linux/bubbly
+            build/dist/linux/bubbly_*
             build/dist/linux/default_conf.json
           retention-days: 1
 
@@ -128,6 +128,6 @@ jobs:
         with:
           name: bubbly-windows
           path: |
-            build/dist/windows/bubbly.exe
+            build/dist/windows/bubbly_*.exe
             build/dist/windows/default_conf.json
           retention-days: 1

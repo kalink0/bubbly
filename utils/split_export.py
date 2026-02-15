@@ -46,6 +46,7 @@ def export_split_by_chat(messages, metadata, media_folder, output_folder, logo_p
 
         chat_meta = dict(metadata)
         chat_meta["chat_name"] = chat_name
+        chat_meta["index_href"] = f"../{safe_case}_index.html"
         exporter = BubblyExporter(
             chat_messages,
             media_folder,

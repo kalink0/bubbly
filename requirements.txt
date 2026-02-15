@@ -1,2 +1,2 @@
-# No third-party Python dependencies are required.
-# Bubbly currently runs with Python standard library only.
+# Windows-only support for interactive CLI tab completion (`readline` fallback).
+pyreadline3; platform_system == "Windows"

@@ -221,6 +221,14 @@ class BubblyExporter:
                 f'<img src="{logo_file}" alt="Brand logo">'
                 "</div>"
             )
+        home_button_html = ""
+        index_href = self.metadata.get("index_href")
+        if index_href:
+            home_button_html = (
+                f'<a class="home-button" href="{index_href}">'
+                '<button type="button">Home</button>'
+                "</a>"
+            )
 
         # ----------------------
         # Load templates
@@ -251,6 +259,8 @@ class BubblyExporter:
             "{{signature}}", signature_html
         ).replace(
             "{{branding_logo}}", branding_html
+        ).replace(
+            "{{home_button}}", home_button_html
         ).replace(
             #"{{messages_json_path}}", json_file
             "{{messages_json_content}}", json.dumps(messages_for_html, ensure_ascii=False)
