@@ -5,7 +5,7 @@ $RepoRoot = Resolve-Path (Join-Path $ScriptDir '..')
 
 python -m pip install -r (Join-Path $ScriptDir 'requirements.txt')
 
-$Version = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "v$(python -c "from bubbly_version import BUBBLY_VERSION; print(BUBBLY_VERSION)")" }
+$Version = if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "v$(python -c 'from bubbly_version import BUBBLY_VERSION; print(BUBBLY_VERSION)')" }
 $BinaryName = "bubbly_$Version"
 
 pyinstaller `

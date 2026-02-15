@@ -6,7 +6,11 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 python -m pip install -r "${SCRIPT_DIR}/requirements.txt"
 
-VERSION="${GITHUB_REF_NAME:-v$(python -c 'from bubbly_version import BUBBLY_VERSION; print(BUBBLY_VERSION)')}"
+if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "${GITHUB_REF_NAME:-}" ]; then
+  VERSION="${GITHUB_REF_NAME}"
+else
+  VERSION="v$(python -c 'from bubbly_version import BUBBLY_VERSION; print(BUBBLY_VERSION)')"
+fi
 BINARY_NAME="bubbly_${VERSION}"
 
 pyinstaller \

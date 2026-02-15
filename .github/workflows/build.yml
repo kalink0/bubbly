@@ -107,14 +107,18 @@ jobs:
           test -f build/README_release.txt
           cp build/README_release.txt build/dist/linux/README_release.txt
 
+      - name: Verify Linux dist contents
+        run: |
+          ls -la build/dist/linux
+          ls -1 build/dist/linux/bubbly_*
+          test -f build/dist/linux/default_conf.json
+          test -f build/dist/linux/README_release.txt
+
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bubbly-linux
-          path: |
-            build/dist/linux/bubbly_*
-            build/dist/linux/default_conf.json
-            build/dist/linux/README_release.txt
+          path: build/dist/linux/
           retention-days: 1
 
   build-windows:
@@ -146,12 +150,17 @@ jobs:
           if (!(Test-Path 'build/README_release.txt')) { throw 'Missing build/README_release.txt' }
           Copy-Item 'build/README_release.txt' 'build/dist/windows/README_release.txt' -Force
 
+      - name: Verify Windows dist contents
+        shell: pwsh
+        run: |
+          Get-ChildItem -Force build/dist/windows
+          if (!(Get-ChildItem build/dist/windows -Filter 'bubbly_*.exe')) { throw 'Missing executable bubbly_*.exe in build/dist/windows' }
+          if (!(Test-Path 'build/dist/windows/default_conf.json')) { throw 'Missing build/dist/windows/default_conf.json' }
+          if (!(Test-Path 'build/dist/windows/README_release.txt')) { throw 'Missing build/dist/windows/README_release.txt' }
+
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bubbly-windows
-          path: |
-            build/dist/windows/bubbly_*.exe
-            build/dist/windows/default_conf.json
-            build/dist/windows/README_release.txt
+          path: build/dist/windows/
           retention-days: 1
