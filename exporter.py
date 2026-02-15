@@ -258,4 +258,4 @@ class BubblyExporter:
         with open(output_html_path, "w", encoding="utf-8") as f:
             f.write(html_content)
 
-        print(f"HTML saved to {output_html_path} with inline CSS/JS")
+        print(f"HTML saved to {output_html_path}")

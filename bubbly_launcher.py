@@ -178,6 +178,59 @@ def parse_parser_args(parser_args_list):
     return parsed_parser_args
 
 
+class _TeeStream:
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, data):
+        for stream in self.streams:
+            stream.write(data)
+        return len(data)
+
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
+
+    def isatty(self):
+        return any(getattr(stream, "isatty", lambda: False)() for stream in self.streams)
+
+
+def _start_run_logging(output_base, args, config_parser_args, cli_parser_args, parser_kwargs):
+    log_dir = output_base / "log"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"bubbly_run_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    log_handle = log_path.open("w", encoding="utf-8")
+
+    args_snapshot = {}
+    for key, value in vars(args).items():
+        if key == "_config":
+            continue
+        args_snapshot[key] = value
+
+    run_context = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "argv": sys.argv[1:],
+        "cli_args_resolved": args_snapshot,
+        "config_values": args._config if isinstance(getattr(args, "_config", None), dict) else {},
+        "config_parser_args": config_parser_args,
+        "cli_parser_args": cli_parser_args,
+        "merged_parser_args": parser_kwargs,
+    }
+
+    log_handle.write("=== Bubbly Run Context ===\n")
+    log_handle.write(json.dumps(run_context, ensure_ascii=False, indent=2))
+    log_handle.write("\n=== CLI Output ===\n")
+    log_handle.flush()
+
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+    sys.stdout = _TeeStream(original_stdout, log_handle)
+    sys.stderr = _TeeStream(original_stderr, log_handle)
+
+    print(f"Run log: {log_path}")
+    return log_handle, original_stdout, original_stderr
+
+
 def _safe_slug(value, fallback="chat"):
     slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value or "")).strip("._-")
     if not slug:
@@ -326,8 +379,8 @@ def _print_cli_summary(messages, metadata, output_folder):
 # Main
 # ----------------------
 def main():
-    print_banner()
     args = parse_args()
+    print_banner()
     args.output = str(normalize_user_path(args.output, must_exist=False))
     if getattr(args, "logo", None):
         args.logo = str(normalize_user_path(args.logo, must_exist=True))
@@ -358,57 +411,74 @@ def main():
     if not safe_case:
         safe_case = "case"
 
-    # Initialize parser
-    parser_instance = parser_class()
+    log_handle = None
+    original_stdout = None
+    original_stderr = None
+    try:
+        log_handle, original_stdout, original_stderr = _start_run_logging(
+            output_base,
+            args,
+            config_parser_args,
+            cli_parser_args,
+            parser_kwargs,
+        )
 
-    # A few steps to do specifically for the generic JSON parser
-    if parser_class is GenericJsonParser:
-        json_file = parser_kwargs.get("json_file")
-        json_paths = parser_instance.resolve_json_paths(input_path, json_file=json_file)
+        # Initialize parser
+        parser_instance = parser_class()
 
-        messages_all = []
-        metadata_all = None
+        # A few steps to do specifically for the generic JSON parser
+        if parser_class is GenericJsonParser:
+            json_file = parser_kwargs.get("json_file")
+            json_paths = parser_instance.resolve_json_paths(input_path, json_file=json_file)
 
-        for json_path in json_paths:
-            run_kwargs = dict(parser_kwargs)
+            messages_all = []
+            metadata_all = None
 
-            messages, metadata = parser_instance.parse(json_path, media_folder, **run_kwargs)
-            messages_all.extend(messages)
+            for json_path in json_paths:
+                run_kwargs = dict(parser_kwargs)
+
+                messages, metadata = parser_instance.parse(json_path, media_folder, **run_kwargs)
+                messages_all.extend(messages)
+                if metadata_all is None:
+                    metadata_all = metadata
+
             if metadata_all is None:
-                metadata_all = metadata
+                raise ValueError("No JSON messages found to export")
 
-        if metadata_all is None:
-            raise ValueError("No JSON messages found to export")
+            metadata_all = dict(metadata_all)
+            if len(json_paths) > 1 and not args.split_by_chat:
+                metadata_all["chat_name"] = "Multiple chats"
 
-        metadata_all = dict(metadata_all)
-        if len(json_paths) > 1 and not args.split_by_chat:
-            metadata_all["chat_name"] = "Multiple chats"
-   
-    else:
-        # Parsing and exporting for all other parsers
-        messages_all, metadata_all = parser_instance.parse(input_path, media_folder, **parser_kwargs)
+        else:
+            # Parsing and exporting for all other parsers
+            messages_all, metadata_all = parser_instance.parse(input_path, media_folder, **parser_kwargs)
 
-    output_folder = output_base
-    if args.split_by_chat:
-        _export_split_by_chat(
-            messages_all,
-            metadata_all,
-            media_folder,
-            output_folder,
-            args.logo,
-            safe_case,
-        )
-    else:
-        output_html_name = f"{safe_case}_report.html"
-        exporter = BubblyExporter(
-            messages_all,
-            media_folder,
-            output_folder,
-            metadata_all,
-            logo_path=args.logo,
-        )
-        exporter.export_html(output_html_name=output_html_name)
-    _print_cli_summary(messages_all, metadata_all, output_folder)
+        output_folder = output_base
+        if args.split_by_chat:
+            _export_split_by_chat(
+                messages_all,
+                metadata_all,
+                media_folder,
+                output_folder,
+                args.logo,
+                safe_case,
+            )
+        else:
+            output_html_name = f"{safe_case}_report.html"
+            exporter = BubblyExporter(
+                messages_all,
+                media_folder,
+                output_folder,
+                metadata_all,
+                logo_path=args.logo,
+            )
+            exporter.export_html(output_html_name=output_html_name)
+        _print_cli_summary(messages_all, metadata_all, output_folder)
+    finally:
+        if log_handle is not None:
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr
+            log_handle.close()
 
 if __name__ == "__main__":
     main()
