@@ -117,7 +117,6 @@ def run_interactive_wizard(parser, args, parsers, parse_parser_args):
     args.output = _prompt_text("Output folder", default=args.output, path_completion=True)
     args.creator = _prompt_text("Creator", default=args.creator)
     args.case = _prompt_text("Case", default=args.case)
-    args.templates_folder = _prompt_text("Templates folder", default=args.templates_folder, path_completion=True)
     args.split_by_chat = _prompt_yes_no(
         "Generate one HTML per chat (split by chat)?",
         default=bool(getattr(args, "split_by_chat", False)),

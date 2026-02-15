@@ -54,8 +54,8 @@ def write_split_index(output_folder, safe_case, reports, case_value, creator=Non
   <title>{html.escape(title)}</title>
   <style>
     body {{ font-family: Arial, sans-serif; margin: 24px; background: #f8f8f8; color: #222; }}
-    .branding-logo {{ margin: 0 0 12px 0; max-width: 220px; max-height: 90px; }}
-    .branding-logo img {{ max-width: 100%; max-height: 100%; object-fit: contain; display: block; }}
+    .branding-logo {{ margin: 0 0 12px 0; width: min(30vw, 220px); height: min(12vh, 90px); }}
+    .branding-logo img {{ width: 100%; height: 100%; object-fit: contain; display: block; }}
     h1 {{ margin: 0 0 12px 0; }}
     p {{ margin: 0 0 8px 0; color: #555; }}
     .meta {{ margin: 0 0 18px 0; color: #444; }}
@@ -64,6 +64,9 @@ def write_split_index(output_folder, safe_case, reports, case_value, creator=Non
     th {{ background: #f0f0f0; }}
     a {{ color: #1a5fd0; text-decoration: none; }}
     a:hover {{ text-decoration: underline; }}
+    @media (max-width: 700px) {{
+      .branding-logo {{ width: min(55vw, 180px); height: min(10vh, 72px); }}
+    }}
   </style>
 </head>
 <body>

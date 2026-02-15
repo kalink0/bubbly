@@ -37,7 +37,6 @@ python messenger/bubbly/bubbly_launcher.py \
   --creator "Analyst Name" \
   --case CASE-123 \
   --logo /path/to/logo.png \
-  --templates_folder messenger/bubbly/templates \
   --parser_args platform=android wa_account_name="Owner Name" wa_account_number="+123"
 ```
 
@@ -51,7 +50,6 @@ python messenger/bubbly/bubbly_launcher.py \
   -u "Analyst Name" \
   -k CASE-123 \
   --logo /path/to/logo.png \
-  -t messenger/bubbly/templates \
   -a platform=android wa_account_name="Owner Name" wa_account_number="+123"
 ```
 
@@ -72,7 +70,6 @@ Example config:
   "case": "CASE-123",
   "logo": "/path/to/logo.png",
   "split_by_chat": true,
-  "templates_folder": "messenger/bubbly/templates",
   "parser_args": {
     "platform": "android",
     "wa_account_name": "Owner Name",
@@ -177,3 +174,8 @@ sqlite3 /path/to/db.sqlite -header -csv \
   "SELECT person, ts, message, file_path FROM messages;" \
   > /tmp/messages.csv
 ```
+
+## Executable builds
+
+Build scripts and build-only dependencies are in `build/`.
+See `build/README.md` for Linux and Windows executable build instructions.

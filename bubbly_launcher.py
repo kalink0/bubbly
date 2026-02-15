@@ -75,7 +75,6 @@ def apply_config(parser, config):
         "output",
         "creator",
         "case",
-        "templates_folder",
         "logo",
         "split_by_chat",
         "parser_args",
@@ -97,7 +96,6 @@ def parse_args():
     parser.add_argument("-o", "--output", help="Output folder for HTML report")
     parser.add_argument("-u", "--creator", help="User generating the report")
     parser.add_argument("-k", "--case", help="Case number")
-    parser.add_argument("-t", "--templates_folder", help="Path to templates folder")
     parser.add_argument("--logo", help="Optional branding logo image path")
     parser.add_argument(
         "--no-split-by-chat",
@@ -153,7 +151,7 @@ def parse_args():
 
     missing = [
         name
-        for name in ("parser", "input", "output", "creator", "case", "templates_folder")
+        for name in ("parser", "input", "output", "creator", "case")
         if not getattr(args, name)
     ]
     if missing:
@@ -195,7 +193,7 @@ def _group_messages_by_chat(messages, default_chat_name):
     return groups
 
 
-def _export_split_by_chat(messages, metadata, media_folder, output_folder, templates_folder, logo_path, safe_case):
+def _export_split_by_chat(messages, metadata, media_folder, output_folder, logo_path, safe_case):
     chat_groups = _group_messages_by_chat(messages, metadata.get("chat_name"))
     used_names = set()
     reports = []
@@ -220,7 +218,6 @@ def _export_split_by_chat(messages, metadata, media_folder, output_folder, templ
             media_folder,
             split_output_folder,
             chat_meta,
-            templates_folder=templates_folder,
             logo_path=logo_path,
         )
         exporter.export_html(output_html_name=file_name)
@@ -332,7 +329,6 @@ def main():
     print_banner()
     args = parse_args()
     args.output = str(normalize_user_path(args.output, must_exist=False))
-    args.templates_folder = str(normalize_user_path(args.templates_folder, must_exist=False))
     if getattr(args, "logo", None):
         args.logo = str(normalize_user_path(args.logo, must_exist=True))
     parser_class = PARSERS.get(args.parser)
@@ -399,7 +395,6 @@ def main():
             metadata_all,
             media_folder,
             output_folder,
-            args.templates_folder,
             args.logo,
             safe_case,
         )
@@ -410,7 +405,6 @@ def main():
             media_folder,
             output_folder,
             metadata_all,
-            templates_folder=args.templates_folder,
             logo_path=args.logo,
         )
         exporter.export_html(output_html_name=output_html_name)

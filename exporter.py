@@ -6,12 +6,14 @@ import mimetypes
 from bubbly_version import BUBBLY_VERSION
 
 class BubblyExporter:
-    def __init__(self, messages, media_folder, output_folder, metadata, templates_folder, logo_path=None):
+    def __init__(self, messages, media_folder, output_folder, metadata, logo_path=None):
         self.messages = messages
         self.media_folder = Path(media_folder)
         self.output_folder = Path(output_folder)
         self.metadata = metadata
-        self.templates_folder = Path(templates_folder)
+        self.templates_folder = Path(__file__).resolve().parent / "templates"
+        if not self.templates_folder.is_dir():
+            raise FileNotFoundError(f"Templates folder not found: {self.templates_folder}")
         self.logo_path = Path(logo_path) if logo_path else None
         self.output_folder.mkdir(parents=True, exist_ok=True)
         (self.output_folder / "media").mkdir(exist_ok=True)
