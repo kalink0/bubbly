@@ -25,7 +25,6 @@ class WhatsAppChatExportParser:
     def parse(
         self,
         input_folder: Path,
-        media_folder: Path,
         platform: str,
         wa_account_name: str = "",
         wa_account_number: str = "",
@@ -120,9 +119,10 @@ class WhatsAppChatExportParser:
                     "url": None
                 }
             else:  # Continuation
-                if current_msg:
-                    current_msg["content"] += "\n" + line
-                    media_file, content = self._extract_media_file_ios(current_msg["content"])
+                if current_msg is not None:
+                    existing_content = str(current_msg.get("content") or "")
+                    current_msg["content"] = f"{existing_content}\n{line}" if existing_content else line
+                    media_file, content = self._extract_media_file_ios(str(current_msg["content"]))
                     current_msg["media"] = media_file
                     current_msg["content"] = content
 

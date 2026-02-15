@@ -33,6 +33,7 @@ class ThreemaMessengerBackupParser:
         threema_account_name: Optional[str] = None,
         **kwargs,
     ) -> Tuple[List[Dict], Dict]:
+        """Parse a Threema CSV backup folder into normalized messages and metadata."""
         input_folder = Path(input_folder)
         media_folder = Path(media_folder)
 

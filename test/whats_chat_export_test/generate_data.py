@@ -1,3 +1,5 @@
+"""Generate a synthetic WhatsApp export dataset for manual stress testing."""
+
 import random
 from datetime import datetime, timedelta
 from pathlib import Path

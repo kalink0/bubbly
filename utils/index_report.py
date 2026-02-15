@@ -1,3 +1,5 @@
+"""Utilities for generating split-report index HTML files."""
+
 import html
 import shutil
 from datetime import datetime
@@ -20,6 +22,7 @@ def _copy_index_logo(output_folder, logo_path):
 
 
 def write_split_index(output_folder, safe_case, reports, case_value, creator=None, logo_path=None, created_at=None):
+    """Write the top-level index HTML for split-by-chat exports."""
     if not reports:
         return
     title = f"{case_value} - Chats" if case_value else "Bubbly Chat Index"

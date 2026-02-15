@@ -1,3 +1,5 @@
+"""HTML exporter for Bubbly chat reports."""
+
 import shutil
 from pathlib import Path
 from datetime import datetime
@@ -6,6 +8,8 @@ import mimetypes
 from bubbly_version import BUBBLY_VERSION
 
 class BubblyExporter:
+    """Export parsed chat messages and media into a self-contained HTML report."""
+
     def __init__(self, messages, media_folder, output_folder, metadata, logo_path=None):
         self.messages = messages
         self.media_folder = Path(media_folder)
@@ -173,6 +177,7 @@ class BubblyExporter:
     # Export HTML
     # ----------------------
     def export_html(self, output_html_name="chat.html"):
+        """Generate the final HTML report, including copied media and embedded data."""
         copied_count = self._copy_media()
         json_file = self._export_json()
         logo_file = self._copy_logo()

@@ -1,3 +1,5 @@
+"""Interactive CLI wizard helpers for guided launcher input collection."""
+
 import glob
 import os
 from contextlib import contextmanager
@@ -103,6 +105,7 @@ def _prompt_yes_no(label, default=False):
 
 
 def run_interactive_wizard(parser, args, parsers, parse_parser_args):
+    """Run a guided interactive prompt and return populated launcher arguments."""
     print("Interactive mode: guided setup")
     print("Press Enter to accept defaults shown in [brackets].")
     print()

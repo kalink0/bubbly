@@ -28,6 +28,7 @@ class TelegramDesktopChatExportParser:
         tg_account_name: Optional[str] = None,
         **kwargs
     ) -> Tuple[List[Dict], Dict]:
+        """Parse Telegram Desktop JSON export files into Bubbly message format."""
         input_folder = Path(input_folder)
 
         json_path = self._find_result_json(input_folder)

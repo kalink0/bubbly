@@ -29,6 +29,7 @@ class WireMessengerBackupParser:
         media_folder: Path,
         **kwargs
     ) -> Tuple[List[Dict], Dict]:
+        """Parse Wire backup protobuf files into normalized chat messages."""
         input_folder = Path(input_folder)
         media_folder = Path(media_folder)
 
@@ -228,6 +229,7 @@ class WireMessengerBackupParser:
 # ----------------------
 
 def decode_protobuf_to_dict(data: bytes) -> Dict[str, Any]:
+    """Decode a protobuf payload into a schema-less dictionary structure."""
     msg, _ = _parse_message(data, 0, len(data))
     return msg
 

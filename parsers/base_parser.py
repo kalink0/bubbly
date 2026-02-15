@@ -1,3 +1,5 @@
+"""Base parser interface used by all messenger-specific parser implementations."""
+
 from abc import ABC, abstractmethod
 
 class BaseParser(ABC):

@@ -1,5 +1,21 @@
+"""Convenience exports for reusable utility helpers."""
+
+from .cli_config import parse_args, parse_parser_args
 from .interactive_cli import run_interactive_wizard
 from .index_report import write_split_index
+from .run_logger import RunLogger
+from .split_export import export_split_by_chat
+from .summary import print_cli_summary
 from .utils import normalize_user_path, prepare_input_generic
 
-__all__ = ["prepare_input_generic", "normalize_user_path", "run_interactive_wizard", "write_split_index"]
+__all__ = [
+    "prepare_input_generic",
+    "normalize_user_path",
+    "run_interactive_wizard",
+    "write_split_index",
+    "RunLogger",
+    "parse_args",
+    "parse_parser_args",
+    "export_split_by_chat",
+    "print_cli_summary",
+]

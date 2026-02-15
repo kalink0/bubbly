@@ -32,6 +32,7 @@ class GenericJsonParser:
         metadata_key: Optional[str] = None,
         **kwargs
     ) -> Tuple[List[Dict], Dict]:
+        """Parse one generic JSON export into normalized messages and metadata."""
         input_path = Path(input_path)
         media_folder = Path(media_folder)
 
@@ -73,6 +74,7 @@ class GenericJsonParser:
         input_path: Path,
         json_file: Optional[str] = None,
     ) -> List[Path]:
+        """Resolve all JSON input files for merge-mode processing."""
         input_path = Path(input_path)
         if input_path.is_file() and input_path.suffix.lower() == ".json":
             return [input_path]

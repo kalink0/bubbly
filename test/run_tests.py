@@ -1,3 +1,5 @@
+"""Minimal unittest discovery runner for project test modules."""
+
 import unittest
 from pathlib import Path
 

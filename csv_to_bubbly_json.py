@@ -1,3 +1,5 @@
+"""Convert CSV message datasets into Bubbly-compatible generic JSON format."""
+
 import argparse
 import csv
 import json
@@ -18,6 +20,7 @@ REQUIRED_MESSAGE_FIELDS = {"sender", "timestamp", "content"}
 
 
 def parse_mapping(mapping_items):
+    """Parse TARGET=CSV_COLUMN mappings and validate required fields."""
     mapping = {}
     for item in mapping_items or []:
         if "=" not in item:
@@ -43,6 +46,7 @@ def parse_mapping(mapping_items):
 
 
 def parse_bool(value):
+    """Convert common truthy string forms into a boolean value."""
     if value is None:
         return False
     text = str(value).strip().lower()
@@ -50,6 +54,7 @@ def parse_bool(value):
 
 
 def build_messages(csv_path, mapping, delimiter=",", encoding="utf-8", strict=False):
+    """Build normalized message dictionaries from CSV rows using field mapping."""
     messages = []
     skipped = 0
     with csv_path.open("r", encoding=encoding, newline="") as handle:
@@ -85,6 +90,7 @@ def build_messages(csv_path, mapping, delimiter=",", encoding="utf-8", strict=Fa
 
 
 def main():
+    """Parse CLI args and write converted CSV content as Bubbly JSON."""
     parser = argparse.ArgumentParser(
         description="Convert a CSV file into Bubbly generic JSON format."
     )

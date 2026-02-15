@@ -1,3 +1,5 @@
+"""General filesystem/input utilities used by launcher and parsers."""
+
 import zipfile
 from pathlib import Path
 import tempfile
@@ -5,6 +7,7 @@ import shutil
 import os
 
 def normalize_user_path(path_value, must_exist=False):
+    """Normalize a user-provided path and optionally validate existence."""
     raw_input = str(path_value).strip()
     if (raw_input.startswith('"') and raw_input.endswith('"')) or (
         raw_input.startswith("'") and raw_input.endswith("'")
