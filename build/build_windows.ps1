@@ -10,6 +10,8 @@ pyinstaller `
   --clean `
   --onefile `
   --name bubbly `
+  --paths $RepoRoot `
+  --hidden-import bubbly_version `
   --distpath (Join-Path $ScriptDir 'dist/windows') `
   --workpath (Join-Path $ScriptDir 'work/windows') `
   --specpath (Join-Path $ScriptDir 'spec') `

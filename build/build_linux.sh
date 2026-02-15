@@ -11,6 +11,8 @@ pyinstaller \
   --clean \
   --onefile \
   --name bubbly \
+  --paths "${REPO_ROOT}" \
+  --hidden-import bubbly_version \
   --distpath "${SCRIPT_DIR}/dist/linux" \
   --workpath "${SCRIPT_DIR}/work/linux" \
   --specpath "${SCRIPT_DIR}/spec" \
