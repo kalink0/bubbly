@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from parsers.generic_json_parser import GenericJsonParser
+from parsers.romeo_android_db import RomeoAndroidDbParser
 from parsers.telegram_desktop_chat_export import TelegramDesktopChatExportParser
 from parsers.threema_messenger_backup import ThreemaMessengerBackupParser
 from parsers.whatsapp_chat_export import WhatsAppChatExportParser
@@ -267,6 +268,188 @@ class TestWireParser(unittest.TestCase):
                 media_file.unlink()
             messages, _ = self.parser.parse(copied, copied, user="Tester", case="CASE-5B")
         self.assertTrue(any(str(m.get("media") or "").startswith("missing:") for m in messages))
+
+
+class TestRomeoAndroidDbParser(unittest.TestCase):
+    """Tests for Romeo Android SQLite parser behavior."""
+
+    def setUp(self):
+        self.parser = RomeoAndroidDbParser()
+
+    def test_parse_default_schema_and_image_marker(self):
+        """Parser should read Romeo schema, normalize timestamp, and mark missing images."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = tmp_path / "romeo_114055512.db"
+            self._create_romeo_db(db_path)
+
+            messages, metadata = self.parser.parse(
+                db_path,
+                tmp_path,
+                user="Tester",
+                case="CASE-ROMEO",
+            )
+
+        self.assertEqual("Romeo", metadata["source"])
+        self.assertEqual("android", metadata["platform"])
+        self.assertEqual("114055512", metadata["romeo_account_id"])
+        self.assertEqual("Romeo Chats", metadata["chat_name"])
+        self.assertEqual(2, len(messages))
+        self.assertEqual("2024-12-13T23:34:21", messages[0]["timestamp"])
+        self.assertTrue(messages[0]["is_owner"])
+        self.assertEqual("114055512", messages[0]["sender"])
+        self.assertEqual("Matt", messages[0]["chat"])
+        self.assertEqual("missing:img_001.jpg", messages[0].get("media"))
+        self.assertEqual("Matt", messages[1]["sender"])
+        self.assertFalse(messages[1]["is_owner"])
+        self.assertEqual("Matt", messages[1]["chat"])
+
+    def test_parse_second_message_as_non_owner(self):
+        """Parser should keep incoming messages as non-owner with default detection."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = tmp_path / "romeo.sqlite"
+            self._create_romeo_db(db_path)
+            messages, _ = self.parser.parse(
+                db_path,
+                tmp_path,
+                account_name="Owner",
+                user="Tester",
+                case="CASE-ROMEO-2",
+            )
+
+        self.assertEqual(2, len(messages))
+        self.assertTrue(messages[0]["is_owner"])
+        self.assertTrue(str(messages[0].get("media") or "").startswith("missing:"))
+        self.assertFalse(messages[1]["is_owner"])
+
+    def test_account_id_from_last_dot_segment(self):
+        """Account id should be parsed from the segment after the last dot."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = tmp_path / "romeo.messages.413917007.sqlite"
+            self._create_romeo_db(db_path)
+            messages, metadata = self.parser.parse(
+                db_path,
+                tmp_path,
+                user="Tester",
+                case="CASE-ROMEO-4",
+            )
+        self.assertEqual("413917007", metadata["romeo_account_id"])
+        self.assertTrue(messages)
+        self.assertEqual("413917007", messages[0]["sender"])
+
+    def test_extensionless_db_filename_with_account_id(self):
+        """Parser should accept SQLite DB files without extension."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = tmp_path / "romeo.chat.413917007"
+            self._create_romeo_db(db_path)
+            messages, metadata = self.parser.parse(
+                db_path,
+                tmp_path,
+                user="Tester",
+                case="CASE-ROMEO-5",
+            )
+        self.assertEqual("413917007", metadata["romeo_account_id"])
+        self.assertEqual(2, len(messages))
+
+    def test_directory_with_extensionless_sqlite_file(self):
+        """Parser should auto-discover extensionless SQLite files in a folder."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = tmp_path / "chat.backup.413917007"
+            self._create_romeo_db(db_path)
+            messages, metadata = self.parser.parse(
+                tmp_path,
+                tmp_path,
+                user="Tester",
+                case="CASE-ROMEO-6",
+            )
+        self.assertEqual("413917007", metadata["romeo_account_id"])
+        self.assertEqual(2, len(messages))
+
+    def _create_romeo_db(self, db_path: Path):
+        import sqlite3
+
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute(
+                """
+                CREATE TABLE MessageEntity (
+                    messageId TEXT NOT NULL PRIMARY KEY,
+                    chatPartnerId TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    date TEXT NOT NULL,
+                    transmissionStatus TEXT NOT NULL,
+                    saved INTEGER NOT NULL,
+                    unread INTEGER NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE ChatPartnerEntity (
+                    profileId TEXT NOT NULL PRIMARY KEY,
+                    onlineStatus TEXT,
+                    name TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE ImageAttachmentEntity (
+                    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    parentMessageId TEXT NOT NULL,
+                    imageId TEXT NOT NULL,
+                    urlToken TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO ChatPartnerEntity(profileId, onlineStatus, name)
+                VALUES (?, ?, ?)
+                """,
+                ("92290179", "OFFLINE", "Matt"),
+            )
+            conn.execute(
+                """
+                INSERT INTO MessageEntity(messageId, chatPartnerId, text, date, transmissionStatus, saved, unread)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "O6977005.413917007",
+                    "92290179",
+                    "Hasta🤣",
+                    "2024-12-13T23:34:21+0000",
+                    "SENT",
+                    0,
+                    0,
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO MessageEntity(messageId, chatPartnerId, text, date, transmissionStatus, saved, unread)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "I6977005.413917008",
+                    "92290179",
+                    "Hello back",
+                    "2024-12-13T23:35:21+0000",
+                    "RECEIVED",
+                    0,
+                    1,
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO ImageAttachmentEntity(parentMessageId, imageId, urlToken)
+                VALUES (?, ?, ?)
+                """,
+                ("O6977005.413917007", "img_001", "tok_001"),
+            )
+            conn.commit()
 
 
 if __name__ == "__main__":

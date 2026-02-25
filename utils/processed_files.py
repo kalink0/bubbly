@@ -3,6 +3,15 @@
 from pathlib import Path
 
 
+def _looks_like_sqlite(path: Path):
+    try:
+        with path.open("rb") as handle:
+            header = handle.read(16)
+    except OSError:
+        return False
+    return header == b"SQLite format 3\x00"
+
+
 def collect_processed_files(parser_name, input_path, json_paths=None):
     """Return a parser-specific list of source files used for processing."""
     root = Path(input_path)
@@ -29,5 +38,19 @@ def collect_processed_files(parser_name, input_path, json_paths=None):
         files = []
         for pattern in ("messages_*.binpb", "conversations_*.binpb", "users_*.binpb"):
             files.extend(sorted(root.glob(pattern)))
+        return [str(path) for path in files]
+    if parser_name == "romeo_android_db":
+        if root.is_file():
+            return [str(root)]
+        files = []
+        for pattern in ("*.db", "*.sqlite", "*.sqlite3"):
+            files.extend(sorted(root.glob(pattern)))
+        for path in sorted(root.iterdir()):
+            if not path.is_file():
+                continue
+            if path in files:
+                continue
+            if _looks_like_sqlite(path):
+                files.append(path)
         return [str(path) for path in files]
     return [str(root)]

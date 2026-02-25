@@ -22,6 +22,7 @@ It currently supports:
 - Wire Messenger unencrypted backups (.wbu/.zip with .binpb files).
 - Threema Messenger backups (CSV-based backup folder/zip).
 - Generic JSON chat exports (single JSON or multiple JSONs in a folder/zip).
+- Romeo Android SQLite databases (sqlite-db).
 
 ![Example report](images/example.png)
 
@@ -88,7 +89,7 @@ Example config:
 ```
 
 Notes:
-- `--parser` / `-p` must be one of: `whatsapp_export`, `telegram_desktop_export`, `wire_messenger_backup`, `threema_messenger_backup`, `generic_json`.
+- `--parser` / `-p` must be one of: `whatsapp_export`, `telegram_desktop_export`, `wire_messenger_backup`, `threema_messenger_backup`, `generic_json`, `romeo_android_db`.
 - Split-by-chat export is the default. Use `--no-split-by-chat` (or config `split_by_chat: false`) for a single merged HTML.
 - `parser_args` are parser-specific.
   - For WhatsApp Chat Exports: `platform`, `wa_account_name` (optional), `wa_account_number` (optional), `chat_name` (optional).
@@ -97,6 +98,9 @@ Notes:
   - For Threema Messenger backups: `threema_account_name` (optional).
     Threema exports are typically password-encrypted ZIP files; Bubbly currently expects the already decrypted/extracted backup contents (CSV/media files).
   - For Generic JSON: `json_file` (optional), `messages_key` (optional), `metadata_key` (optional), `account_name` (optional).
+  - For Romeo Android DB: `account_name` (optional; if omitted, trailing account id from DB filename is used as fallback).
+    By default, each message/chat is labeled by the Romeo chat partner name from `ChatPartnerEntity`.
+    Message direction is derived from `MessageEntity.transmissionStatus` (`SENT` = outgoing, `RECEIVED` = incoming). Input is the database from the app directory (planetromeo-room.db.<account_id>).
 
 ## Generic JSON schema
 

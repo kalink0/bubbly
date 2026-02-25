@@ -8,6 +8,7 @@ from pathlib import Path
 from bubbly_version import BUBBLY_VERSION
 from exporter import BubblyExporter
 from parsers.generic_json_parser import GenericJsonParser
+from parsers.romeo_android_db import RomeoAndroidDbParser
 from parsers.telegram_desktop_chat_export import TelegramDesktopChatExportParser
 from parsers.threema_messenger_backup import ThreemaMessengerBackupParser
 from parsers.wire_messenger_backup import WireMessengerBackupParser
@@ -31,6 +32,7 @@ PARSERS = {
     "wire_messenger_backup": WireMessengerBackupParser,
     "threema_messenger_backup": ThreemaMessengerBackupParser,
     "generic_json": GenericJsonParser,
+    "romeo_android_db": RomeoAndroidDbParser,
 }
 
 
@@ -64,7 +66,15 @@ def main():
         if not parser_class:
             raise ValueError(f"Unknown parser {args.parser}. Available: {list(PARSERS.keys())}")
 
-        input_path, media_folder = prepare_input_generic(args.input)
+        if parser_class is RomeoAndroidDbParser:
+            raw_input = normalize_user_path(args.input, must_exist=True)
+            if raw_input.is_file() and raw_input.suffix.lower() in {".zip", ".wbu"}:
+                input_path, media_folder = prepare_input_generic(args.input)
+            else:
+                input_path = raw_input
+                media_folder = input_path.parent if input_path.is_file() else input_path
+        else:
+            input_path, media_folder = prepare_input_generic(args.input)
 
         config_parser_args = {}
         if isinstance(getattr(args, "_config", None), dict):

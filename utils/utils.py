@@ -73,5 +73,9 @@ def prepare_input_generic(input_path):
     elif input_path.is_file() and input_path.suffix.lower() == ".txt":
         return input_path.parent, input_path.parent
 
+    # Case 5: single SQLite database file
+    elif input_path.is_file() and input_path.suffix.lower() in {".db", ".sqlite", ".sqlite3"}:
+        return input_path, input_path.parent
+
     else:
         raise ValueError(f"Unsupported input type: {input_path}")
