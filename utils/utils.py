@@ -29,8 +29,7 @@ def prepare_input_generic(input_path):
     Prepares input for any parser:
     - If zip: extracts to temporary folder
     - If folder: returns folder
-    - If single json file: returns file path + parent as media folder
-    - If single text file: returns file parent as folder
+    - If file: returns file path + parent as media folder
     Returns:
         input_folder: Path to folder or file containing text/media
         media_folder: Path to folder containing media files (usually same as input folder)
@@ -65,16 +64,8 @@ def prepare_input_generic(input_path):
     elif input_path.is_dir():
         return input_path, input_path
 
-    # Case 3: single json file
-    elif input_path.is_file() and input_path.suffix.lower() == ".json":
-        return input_path, input_path.parent
-
-    # Case 4: single text file
-    elif input_path.is_file() and input_path.suffix.lower() == ".txt":
-        return input_path.parent, input_path.parent
-
-    # Case 5: single SQLite database file
-    elif input_path.is_file() and input_path.suffix.lower() in {".db", ".sqlite", ".sqlite3"}:
+    # Case 3: file
+    elif input_path.is_file():
         return input_path, input_path.parent
 
     else:

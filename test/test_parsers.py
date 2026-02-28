@@ -280,7 +280,7 @@ class TestRomeoAndroidDbParser(unittest.TestCase):
         """Parser should read Romeo schema, normalize timestamp, and mark missing images."""
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            db_path = tmp_path / "romeo_114055512.db"
+            db_path = tmp_path / "planetromeo-room.db.114055512"
             self._create_romeo_db(db_path)
 
             messages, metadata = self.parser.parse(
@@ -308,7 +308,7 @@ class TestRomeoAndroidDbParser(unittest.TestCase):
         """Parser should keep incoming messages as non-owner with default detection."""
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            db_path = tmp_path / "romeo.sqlite"
+            db_path = tmp_path / "planetromeo-room.db.114055512"
             self._create_romeo_db(db_path)
             messages, _ = self.parser.parse(
                 db_path,
@@ -327,7 +327,7 @@ class TestRomeoAndroidDbParser(unittest.TestCase):
         """Account id should be parsed from the segment after the last dot."""
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            db_path = tmp_path / "romeo.messages.413917007.sqlite"
+            db_path = tmp_path / "planetromeo-room.db.413917007"
             self._create_romeo_db(db_path)
             messages, metadata = self.parser.parse(
                 db_path,
@@ -339,11 +339,11 @@ class TestRomeoAndroidDbParser(unittest.TestCase):
         self.assertTrue(messages)
         self.assertEqual("413917007", messages[0]["sender"])
 
-    def test_extensionless_db_filename_with_account_id(self):
-        """Parser should accept SQLite DB files without extension."""
+    def test_accept_direct_file_without_account_id_suffix(self):
+        """Parser should accept direct SQLite file input regardless filename pattern."""
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            db_path = tmp_path / "romeo.chat.413917007"
+            db_path = tmp_path / "planetromeo-room.db"
             self._create_romeo_db(db_path)
             messages, metadata = self.parser.parse(
                 db_path,
@@ -351,23 +351,24 @@ class TestRomeoAndroidDbParser(unittest.TestCase):
                 user="Tester",
                 case="CASE-ROMEO-5",
             )
-        self.assertEqual("413917007", metadata["romeo_account_id"])
+        self.assertEqual("", metadata["romeo_account_id"])
         self.assertEqual(2, len(messages))
+        self.assertEqual("Me", messages[0]["sender"])
 
-    def test_directory_with_extensionless_sqlite_file(self):
-        """Parser should auto-discover extensionless SQLite files in a folder."""
+    def test_directory_rejects_non_matching_sqlite_filename(self):
+        """Parser should ignore SQLite files in folder if Romeo naming is not matched."""
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            db_path = tmp_path / "chat.backup.413917007"
+            db_path = tmp_path / "romeo.sqlite"
             self._create_romeo_db(db_path)
-            messages, metadata = self.parser.parse(
-                tmp_path,
-                tmp_path,
-                user="Tester",
-                case="CASE-ROMEO-6",
-            )
-        self.assertEqual("413917007", metadata["romeo_account_id"])
-        self.assertEqual(2, len(messages))
+            (tmp_path / "notes.txt").write_text("ignore me", encoding="utf-8")
+            with self.assertRaises(FileNotFoundError):
+                self.parser.parse(
+                    tmp_path,
+                    tmp_path,
+                    user="Tester",
+                    case="CASE-ROMEO-6",
+                )
 
     def _create_romeo_db(self, db_path: Path):
         import sqlite3

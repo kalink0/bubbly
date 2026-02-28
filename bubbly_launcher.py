@@ -1,7 +1,6 @@
 """CLI launcher for parsing chat exports and generating Bubbly reports."""
 
 import re
-import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -17,6 +16,7 @@ from utils import (
     RunLogger,
     collect_processed_files,
     export_split_by_chat,
+    log_fallback_exception,
     normalize_user_path,
     parse_args,
     parse_parser_args,
@@ -57,6 +57,7 @@ def print_banner():
 def main():
     """Run the end-to-end launcher flow: parse, export, and log execution."""
     output_base = None
+    run_logger_started = False
     try:
         args = parse_args(PARSERS, banner_printer=print_banner)
         args.output = str(normalize_user_path(args.output, must_exist=False))
@@ -65,14 +66,10 @@ def main():
         parser_class = PARSERS.get(args.parser)
         if not parser_class:
             raise ValueError(f"Unknown parser {args.parser}. Available: {list(PARSERS.keys())}")
+        parser_instance = parser_class()
 
-        if parser_class is RomeoAndroidDbParser:
-            raw_input = normalize_user_path(args.input, must_exist=True)
-            if raw_input.is_file() and raw_input.suffix.lower() in {".zip", ".wbu"}:
-                input_path, media_folder = prepare_input_generic(args.input)
-            else:
-                input_path = raw_input
-                media_folder = input_path.parent if input_path.is_file() else input_path
+        if hasattr(parser_instance, "prepare_input"):
+            input_path, media_folder = parser_instance.prepare_input(args.input)
         else:
             input_path, media_folder = prepare_input_generic(args.input)
 
@@ -101,9 +98,9 @@ def main():
             parser_kwargs=parser_kwargs,
             log_level=args.log_level,
         ):
+            run_logger_started = True
             if not getattr(args, "_banner_shown", False):
                 print_banner()
-            parser_instance = parser_class()
 
             if parser_class is GenericJsonParser:
                 json_file = parser_kwargs.get("json_file")
@@ -170,8 +167,8 @@ def main():
     except Exception as exc:
         fallback_base = (output_base / "log") if output_base is not None else None
         log_path = write_fallback_exception_log(exc, output_base=fallback_base)
-        print(f"ERROR: {exc}", file=sys.stderr)
-        print(f"Error log: {log_path}", file=sys.stderr)
+        if not run_logger_started:
+            log_fallback_exception(exc, log_path)
         raise
 
 

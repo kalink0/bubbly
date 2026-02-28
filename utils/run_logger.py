@@ -130,3 +130,28 @@ def write_fallback_exception_log(exc, output_base=None):
         handle.write("Traceback:\n")
         handle.write("".join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
     return log_path
+
+
+def log_fallback_exception(exc, log_path):
+    """Log fallback exception details to terminal and the fallback log file."""
+    logger_name = f"bubbly.fallback.{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.ERROR)
+    logger.propagate = False
+
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    stream_handler = logging.StreamHandler(sys.stderr)
+    stream_handler.setFormatter(formatter)
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    logger.addHandler(file_handler)
+
+    try:
+        logger.error("ERROR: %s", exc)
+        logger.exception("Unhandled exception during run", exc_info=(type(exc), exc, exc.__traceback__))
+        logger.error("Error log: %s", log_path)
+    finally:
+        for handler in list(logger.handlers):
+            handler.close()
+            logger.removeHandler(handler)

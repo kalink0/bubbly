@@ -46,6 +46,7 @@ class RomeoAndroidDbParser:
 
     _STATUS_SENT = "sent"
     _STATUS_RECEIVED = "received"
+    _ACCOUNT_ID_PATTERN = re.compile(r"^planetromeo-room\.db\.(\d+)$")
 
     def parse(
         self,
@@ -87,34 +88,26 @@ class RomeoAndroidDbParser:
 
     def _resolve_db_path(self, input_path: Path) -> Path:
         if input_path.is_file():
-            suffix = input_path.suffix.lower()
-            if suffix in {".db", ".sqlite", ".sqlite3"}:
-                return input_path
-            if self._looks_like_sqlite(input_path):
-                return input_path
-            raise ValueError(f"Expected a SQLite DB file, got: {input_path}")
+            if not self._looks_like_sqlite(input_path):
+                raise ValueError(f"Expected a SQLite DB file, got: {input_path}")
+            return input_path
 
         if input_path.is_dir():
-            candidates: List[Path] = []
-            for pattern in ("*.db", "*.sqlite", "*.sqlite3"):
-                candidates.extend(sorted(input_path.glob(pattern)))
-            for path in sorted(input_path.iterdir()):
-                if not path.is_file():
-                    continue
-                if path in candidates:
-                    continue
-                if self._looks_like_sqlite(path):
-                    candidates.append(path)
+            candidates = [
+                path
+                for path in sorted(input_path.iterdir())
+                if path.is_file()
+                if self._extract_account_id_from_db_name(path)
+            ]
             if not candidates:
-                raise FileNotFoundError(f"No SQLite DB file found in {input_path}")
+                raise FileNotFoundError(
+                    "No Romeo DB candidate found in "
+                    f"{input_path} (expected 'planetromeo-room.db.<digits>')"
+                )
             if len(candidates) == 1:
                 return candidates[0]
-            preferred_names = {"romeo.db", "romeo.sqlite", "romeo.sqlite3"}
-            for path in candidates:
-                if path.name.lower() in preferred_names:
-                    return path
             raise ValueError(
-                "Multiple SQLite files found; provide --input as the exact DB file path."
+                "Multiple Romeo SQLite files found; provide --input as the exact DB file path."
             )
 
         raise ValueError(f"Unsupported input path: {input_path}")
@@ -183,19 +176,7 @@ class RomeoAndroidDbParser:
         return normalized
 
     def _extract_account_id_from_db_name(self, db_path: Path) -> str:
-        name = db_path.name
-        for ext in (".sqlite3", ".sqlite", ".db"):
-            if name.lower().endswith(ext):
-                name = name[: -len(ext)]
-                break
-
-        # Preferred Romeo naming: account id after the last dot, usually 8-9 digits.
-        tail = name.rsplit(".", 1)[-1].strip()
-        if re.fullmatch(r"\d{8,9}", tail):
-            return tail
-
-        # Fallback: any trailing digit sequence.
-        match = re.search(r"(\d+)$", name)
+        match = self._ACCOUNT_ID_PATTERN.fullmatch(db_path.name)
         if match:
             return match.group(1)
         return ""

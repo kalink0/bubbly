@@ -1,15 +1,9 @@
 """Helpers for collecting parser-specific processed source files."""
 
+import re
 from pathlib import Path
 
-
-def _looks_like_sqlite(path: Path):
-    try:
-        with path.open("rb") as handle:
-            header = handle.read(16)
-    except OSError:
-        return False
-    return header == b"SQLite format 3\x00"
+_ROMEO_DB_PATTERN = re.compile(r"^planetromeo-room\.db\.\d+$")
 
 
 def collect_processed_files(parser_name, input_path, json_paths=None):
@@ -42,15 +36,10 @@ def collect_processed_files(parser_name, input_path, json_paths=None):
     if parser_name == "romeo_android_db":
         if root.is_file():
             return [str(root)]
-        files = []
-        for pattern in ("*.db", "*.sqlite", "*.sqlite3"):
-            files.extend(sorted(root.glob(pattern)))
-        for path in sorted(root.iterdir()):
-            if not path.is_file():
-                continue
-            if path in files:
-                continue
-            if _looks_like_sqlite(path):
-                files.append(path)
+        files = [
+            path
+            for path in sorted(root.iterdir())
+            if path.is_file() and _ROMEO_DB_PATTERN.fullmatch(path.name)
+        ]
         return [str(path) for path in files]
     return [str(root)]
