@@ -389,6 +389,7 @@ class BubblyGui(tk.Tk):
             return
         target = str(path)
         if sys.platform.startswith("win"):
+            # pylint: disable=no-member
             os.startfile(target)
         elif sys.platform == "darwin":
             subprocess.run(["open", target], check=False)
