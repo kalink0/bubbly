@@ -75,19 +75,24 @@ class TelegramDesktopChatExportParser:
 
         return messages, metadata
 
-    def _find_result_json(self, input_folder: Path) -> Path:
-        preferred = input_folder / "result.json"
+    def _find_result_json(self, input_path: Path) -> Path:
+        if input_path.is_file():
+            if input_path.suffix.lower() == ".json":
+                return input_path
+            raise FileNotFoundError(f"Expected a .json file for Telegram export, got: {input_path}")
+
+        preferred = input_path / "result.json"
         if preferred.is_file():
             return preferred
 
-        json_files = list(input_folder.glob("*.json"))
+        json_files = list(input_path.glob("*.json"))
         if len(json_files) == 1:
             return json_files[0]
         if json_files:
             raise FileNotFoundError(
                 "Multiple .json files found; expected result.json"
             )
-        raise FileNotFoundError(f"No .json export found in {input_folder}")
+        raise FileNotFoundError(f"No .json export found in {input_path}")
 
     def _render_text(self, text: Any) -> str:
         if isinstance(text, str):

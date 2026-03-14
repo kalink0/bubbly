@@ -31,6 +31,8 @@ class WireMessengerBackupParser:
     ) -> Tuple[List[Dict], Dict]:
         """Parse Wire backup protobuf files into normalized chat messages."""
         input_folder = Path(input_folder)
+        if input_folder.is_file():
+            input_folder = input_folder.parent
         media_folder = Path(media_folder)
 
         account_id = self._find_account_id(input_folder)

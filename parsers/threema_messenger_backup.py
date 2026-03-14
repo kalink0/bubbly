@@ -35,6 +35,8 @@ class ThreemaMessengerBackupParser:
     ) -> Tuple[List[Dict], Dict]:
         """Parse a Threema CSV backup folder into normalized messages and metadata."""
         input_folder = Path(input_folder)
+        if input_folder.is_file():
+            input_folder = input_folder.parent
         media_folder = Path(media_folder)
 
         if not self._has_csv_backup_structure(input_folder):

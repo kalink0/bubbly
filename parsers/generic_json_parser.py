@@ -184,6 +184,8 @@ class GenericJsonParser:
         is_owner = msg.get("is_owner")
         if is_owner is None and account_name:
             is_owner = sender == account_name
+        if account_name and bool(is_owner):
+            sender = account_name
 
         return {
             "timestamp": timestamp,

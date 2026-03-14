@@ -46,7 +46,9 @@ jobs:
         run: |
           python -m py_compile bubbly_launcher.py
           python -m py_compile exporter.py
-          python -m py_compile csv_to_bubbly_json.py
+          python -m py_compile bubbly_gui.py
+          python -m py_compile input_to_bubbly_json.py
+          python -m py_compile input_to_bubbly_gui.py
           python -m py_compile utils/interactive_cli.py
           python -m py_compile utils/index_report.py
           python -m py_compile parsers/whatsapp_chat_export.py
@@ -97,12 +99,36 @@ jobs:
       - name: Build Linux executable
         run: bash build/build_linux.sh
 
-      - name: Upload Linux artifacts
+      - name: Upload Linux CLI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bubbly-linux
+          name: bubbly-cli-linux
           path: |
             build/dist/linux/bubbly_*
+          retention-days: 1
+
+      - name: Upload Linux Bubbly GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bubbly-gui-linux
+          path: |
+            build/dist/linux/bubbly_gui_*
+          retention-days: 1
+
+      - name: Upload Linux Input-to-JSON GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: input-to-json-gui-linux
+          path: |
+            build/dist/linux/input_to_bubbly_gui_*
+          retention-days: 1
+
+      - name: Upload Linux Input-to-JSON script
+        uses: actions/upload-artifact@v4
+        with:
+          name: input-to-json-script
+          path: |
+            input_to_bubbly_json.py
           retention-days: 1
 
   build-windows:
@@ -122,10 +148,34 @@ jobs:
         shell: pwsh
         run: ./build/build_windows.ps1
 
-      - name: Upload Windows artifacts
+      - name: Upload Windows CLI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bubbly-windows
+          name: bubbly-cli-windows
           path: |
             build/dist/windows/bubbly_*.exe
+          retention-days: 1
+
+      - name: Upload Windows Bubbly GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bubbly-gui-windows
+          path: |
+            build/dist/windows/bubbly_gui_*.exe
+          retention-days: 1
+
+      - name: Upload Windows Input-to-JSON GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: input-to-json-gui-windows
+          path: |
+            build/dist/windows/input_to_bubbly_gui_*.exe
+          retention-days: 1
+
+      - name: Upload Windows Input-to-JSON script
+        uses: actions/upload-artifact@v4
+        with:
+          name: input-to-json-script
+          path: |
+            input_to_bubbly_json.py
           retention-days: 1

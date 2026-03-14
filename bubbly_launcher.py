@@ -54,12 +54,11 @@ def print_banner():
     print(banner)
 
 
-def main():
-    """Run the end-to-end launcher flow: parse, export, and log execution."""
+def run_with_args(args):
+    """Run the end-to-end launcher flow with a prepared argument namespace."""
     output_base = None
     run_logger_started = False
     try:
-        args = parse_args(PARSERS, banner_printer=print_banner)
         args.output = str(normalize_user_path(args.output, must_exist=False))
         if getattr(args, "logo", None):
             args.logo = str(normalize_user_path(args.logo, must_exist=True))
@@ -90,6 +89,7 @@ def main():
         if not safe_case:
             safe_case = "case"
 
+        report_path = None
         with RunLogger(
             output_base=output_base,
             args=args,
@@ -160,8 +160,14 @@ def main():
                     logo_path=args.logo,
                 )
                 exporter.export_html(output_html_name=output_html_name)
+                report_path = output_folder / output_html_name
 
             print_cli_summary(messages_all, metadata_all)
+        return {
+            "output_folder": output_folder,
+            "report_path": report_path,
+            "message_count": len(messages_all),
+        }
     except SystemExit:
         raise
     except Exception as exc:
@@ -170,6 +176,12 @@ def main():
         if not run_logger_started:
             log_fallback_exception(exc, log_path)
         raise
+
+
+def main():
+    """Run the end-to-end launcher flow: parse, export, and log execution."""
+    args = parse_args(PARSERS, banner_printer=print_banner)
+    run_with_args(args)
 
 
 if __name__ == "__main__":

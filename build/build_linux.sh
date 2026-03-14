@@ -11,19 +11,26 @@ if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "${GITHUB_REF_NAME:-}" ]; then
 else
   VERSION="v$(python -c 'from bubbly_version import BUBBLY_VERSION; print(BUBBLY_VERSION)')"
 fi
-BINARY_NAME="bubbly_${VERSION}"
+build_one() {
+  local entry="$1"
+  local name="$2"
 
-pyinstaller \
-  --noconfirm \
-  --clean \
-  --onefile \
-  --name "${BINARY_NAME}" \
-  --paths "${REPO_ROOT}" \
-  --hidden-import bubbly_version \
-  --distpath "${SCRIPT_DIR}/dist/linux" \
-  --workpath "${SCRIPT_DIR}/work/linux" \
-  --specpath "${SCRIPT_DIR}/spec" \
-  --add-data "${REPO_ROOT}/templates:templates" \
-  "${REPO_ROOT}/bubbly_launcher.py"
+  pyinstaller \
+    --noconfirm \
+    --clean \
+    --onefile \
+    --name "${name}" \
+    --paths "${REPO_ROOT}" \
+    --hidden-import bubbly_version \
+    --distpath "${SCRIPT_DIR}/dist/linux" \
+    --workpath "${SCRIPT_DIR}/work/linux" \
+    --specpath "${SCRIPT_DIR}/spec" \
+    --add-data "${REPO_ROOT}/templates:templates" \
+    "${REPO_ROOT}/${entry}"
 
-echo "Built: ${SCRIPT_DIR}/dist/linux/${BINARY_NAME}"
+  echo "Built: ${SCRIPT_DIR}/dist/linux/${name}"
+}
+
+build_one "bubbly_launcher.py" "bubbly_${VERSION}"
+build_one "bubbly_gui.py" "bubbly_gui_${VERSION}"
+build_one "input_to_bubbly_gui.py" "input_to_bubbly_gui_${VERSION}"

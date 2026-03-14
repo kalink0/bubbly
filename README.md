@@ -140,12 +140,12 @@ Minimal example:
 }
 ```
 
-## CSV to JSON utility
+## Input to JSON utility
 
 For non-programmers, you can create a Bubbly-compatible JSON from a CSV file (that is a possible output from different tools and sqlitebrowser) using:
 
 ```bash
-python csv_to_bubbly_json.py \
+python input_to_bubbly_json.py \
   --csv /path/to/messages.csv \
   --output /path/to/chat.json \
   --messenger whatsapp \
@@ -186,6 +186,35 @@ sqlite3 /path/to/db.sqlite -header -csv \
   "SELECT person, ts, message, file_path FROM messages;" \
   > /tmp/messages.csv
 ```
+
+## GUI launcher (Bubbly)
+
+Start the full Bubbly GUI launcher:
+
+```bash
+python bubbly_gui.py
+```
+
+It wraps the existing CLI flow and lets you:
+- Choose a parser and input/output paths
+- Configure parser-specific arguments
+- Run the export and view logs
+- Open the output folder when done
+
+## GUI input-to-JSON
+
+Start the input-to-JSON GUI (CSV today, more formats later):
+
+```bash
+python input_to_bubbly_gui.py
+```
+
+It provides:
+- File picker + output path selection
+- Mapping UI for message fields
+- CSV preview + timestamp preview
+- Auto-detect for common timestamp formats
+- A skipped-rows tab and optional log file
 
 ## Executable builds
 

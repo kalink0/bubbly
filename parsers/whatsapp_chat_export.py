@@ -69,11 +69,7 @@ class WhatsAppChatExportParser:
         '''
         Parse data from iOS Chat export
         '''
-        # Find TXT file
-        txt_files = list(input_folder.glob("*.txt"))
-        if not txt_files:
-            raise FileNotFoundError(f"No .txt file found in {input_folder}")
-        txt_file = txt_files[0]
+        txt_file = self._resolve_txt_file(input_folder)
 
         with open(txt_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -135,10 +131,7 @@ class WhatsAppChatExportParser:
     # Android parser
     # ----------------------
     def _parse_android(self, input_folder: Path) -> List[Dict]:
-        txt_files = list(input_folder.glob("*.txt"))
-        if not txt_files:
-            raise FileNotFoundError(f"No .txt file found in {input_folder}")
-        txt_file = txt_files[0]
+        txt_file = self._resolve_txt_file(input_folder)
 
         messages = []
         current_msg = {}
@@ -184,6 +177,17 @@ class WhatsAppChatExportParser:
             messages.append(current_msg)
 
         return messages
+
+    def _resolve_txt_file(self, input_path: Path) -> Path:
+        if input_path.is_file():
+            if input_path.suffix.lower() == ".txt":
+                return input_path
+            raise FileNotFoundError(f"Expected a .txt file for WhatsApp export, got: {input_path}")
+
+        txt_files = list(input_path.glob("*.txt"))
+        if not txt_files:
+            raise FileNotFoundError(f"No .txt file found in {input_path}")
+        return txt_files[0]
 
     # ----------------------
     # Media extraction iOS
