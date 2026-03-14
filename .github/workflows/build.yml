@@ -103,7 +103,7 @@ jobs:
         run: bash build/build_linux.sh
 
       - name: Upload Linux CLI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bubbly-cli-linux
           path: |
@@ -111,7 +111,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Linux Bubbly GUI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bubbly-gui-linux
           path: |
@@ -119,7 +119,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Linux Input-to-JSON GUI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: input-to-json-gui-linux
           path: |
@@ -127,9 +127,9 @@ jobs:
           retention-days: 1
 
       - name: Upload Linux Input-to-JSON script
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: input-to-json-script
+          name: input-to-json-script-linux
           path: |
             input_to_bubbly_json.py
           retention-days: 1
@@ -152,7 +152,7 @@ jobs:
         run: ./build/build_windows.ps1
 
       - name: Upload Windows CLI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bubbly-cli-windows
           path: |
@@ -160,7 +160,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Windows Bubbly GUI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bubbly-gui-windows
           path: |
@@ -168,7 +168,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Windows Input-to-JSON GUI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: input-to-json-gui-windows
           path: |
@@ -176,9 +176,9 @@ jobs:
           retention-days: 1
 
       - name: Upload Windows Input-to-JSON script
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: input-to-json-script
+          name: input-to-json-script-windows
           path: |
             input_to_bubbly_json.py
           retention-days: 1
