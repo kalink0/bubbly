@@ -130,8 +130,14 @@ class CsvToBubblyGui(tk.Tk):
         container = ttk.Frame(self, padding=16)
         container.pack(fill=tk.BOTH, expand=True)
 
+        header = ttk.Frame(container)
+        header.pack(fill=tk.X)
+        ttk.Label(header, text="Input to Bubbly JSON", font=("TkDefaultFont", 14, "bold")).pack(
+            side=tk.LEFT
+        )
+
         file_frame = ttk.LabelFrame(container, text="Input / Output", padding=12)
-        file_frame.pack(fill=tk.X)
+        file_frame.pack(fill=tk.X, pady=(12, 0))
 
         self._build_file_row(file_frame, "CSV file", self.csv_path, self._choose_csv)
         self._build_file_row(file_frame, "Output JSON", self.output_path, self._choose_output)

@@ -11,8 +11,10 @@ from tkinter import filedialog, messagebox
 from tkinter import ttk
 import subprocess
 import sys
+import shutil
 
 from bubbly_launcher import PARSERS, run_with_args
+from input_to_bubbly_gui import CsvToBubblyGui
 
 
 LOG_LEVELS = ["debug", "info", "warning", "error", "critical"]
@@ -31,7 +33,7 @@ class TextRedirector:
 
 
 class BubblyGui(tk.Tk):
-    def __init__(self):
+    def __init__(self, prefill=None):
         super().__init__()
         self.title("Bubbly Launcher")
         self.minsize(900, 600)
@@ -53,6 +55,8 @@ class BubblyGui(tk.Tk):
         self.last_output_folder = None
 
         self._build_layout()
+        if prefill:
+            self._apply_prefill(prefill)
         self._poll_events()
 
     def _configure_style(self):
@@ -187,6 +191,13 @@ class BubblyGui(tk.Tk):
 
         grid.columnconfigure(1, weight=1)
 
+        tool_row = ttk.Frame(setup_frame)
+        tool_row.pack(fill=tk.X, pady=(12, 0))
+        ttk.Label(tool_row, text="Need to create a generic JSON first?").pack(side=tk.LEFT)
+        ttk.Button(tool_row, text="Open Input-to-JSON", command=self._open_input_to_json).pack(
+            side=tk.LEFT, padx=(8, 0)
+        )
+
     def _build_parser_tab(self, parent):
         parser_frame = ttk.LabelFrame(parent, text="Parser-specific arguments", padding=12)
         parser_frame.pack(fill=tk.BOTH, expand=True)
@@ -203,6 +214,23 @@ class BubblyGui(tk.Tk):
 
         self.log_text = tk.Text(log_frame, height=16, wrap="word", state="disabled", background="#ffffff")
         self.log_text.pack(fill=tk.BOTH, expand=True)
+
+    def _apply_prefill(self, prefill):
+        parser_value = prefill.get("parser")
+        if parser_value:
+            self.parser_var.set(parser_value)
+            self._render_parser_args()
+
+        for key, target in (
+            ("input", self.input_path),
+            ("output", self.output_path),
+            ("creator", self.creator),
+            ("case", self.case),
+            ("logo", self.logo_path),
+        ):
+            value = prefill.get(key)
+            if value:
+                target.set(value)
 
     def _on_parser_change(self, _event=None):
         self._render_parser_args()
@@ -394,13 +422,31 @@ class BubblyGui(tk.Tk):
         elif sys.platform == "darwin":
             subprocess.run(["open", target], check=False)
         else:
-            subprocess.run(["xdg-open", target], check=False)
+            opener = None
+            for candidate in ("xdg-open", "gio", "gnome-open", "kde-open"):
+                if shutil.which(candidate):
+                    opener = candidate
+                    break
+            if not opener:
+                messagebox.showerror(
+                    "Open failed",
+                    "Could not find a system opener (xdg-open/gio/gnome-open/kde-open).",
+                )
+                return
+            if opener == "gio":
+                subprocess.run([opener, "open", target], check=False)
+            else:
+                subprocess.run([opener, target], check=False)
 
     def _open_output_folder(self):
         if not self.last_output_folder:
             messagebox.showinfo("No output", "No output folder available yet.")
             return
         self._open_path(self.last_output_folder)
+
+    def _open_input_to_json(self):
+        input_gui = CsvToBubblyGui()
+        input_gui.mainloop()
 
 
 

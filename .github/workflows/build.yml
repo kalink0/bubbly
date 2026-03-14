@@ -118,6 +118,7 @@ jobs:
             build/dist/linux/bubbly_gui_*
           retention-days: 1
 
+
       - name: Upload Linux Input-to-JSON GUI artifact
         uses: actions/upload-artifact@v6
         with:
@@ -132,6 +133,22 @@ jobs:
           name: input-to-json-script-linux
           path: |
             input_to_bubbly_json.py
+          retention-days: 1
+
+      - name: Create Linux bundle archive
+        run: |
+          tar -czf build/dist/linux/bubbly_linux_bundle.tar.gz \
+            build/dist/linux/bubbly_* \
+            build/dist/linux/bubbly_gui_* \
+            build/dist/linux/input_to_bubbly_gui_* \
+            input_to_bubbly_json.py
+
+      - name: Upload Linux bundle archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: bubbly-linux-bundle
+          path: |
+            build/dist/linux/bubbly_linux_bundle.tar.gz
           retention-days: 1
 
   build-windows:
@@ -167,6 +184,7 @@ jobs:
             build/dist/windows/bubbly_gui_*.exe
           retention-days: 1
 
+
       - name: Upload Windows Input-to-JSON GUI artifact
         uses: actions/upload-artifact@v6
         with:
@@ -181,4 +199,24 @@ jobs:
           name: input-to-json-script-windows
           path: |
             input_to_bubbly_json.py
+          retention-days: 1
+
+      - name: Create Windows bundle archive
+        shell: pwsh
+        run: |
+          $bundlePath = Join-Path 'build/dist/windows' 'bubbly_windows_bundle.zip'
+          $files = @(
+            'build/dist/windows/bubbly_*.exe',
+            'build/dist/windows/bubbly_gui_*.exe',
+            'build/dist/windows/input_to_bubbly_gui_*.exe',
+            'input_to_bubbly_json.py'
+          )
+          Compress-Archive -Path $files -DestinationPath $bundlePath -Force
+
+      - name: Upload Windows bundle archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: bubbly-windows-bundle
+          path: |
+            build/dist/windows/bubbly_windows_bundle.zip
           retention-days: 1

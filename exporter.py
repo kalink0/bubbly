@@ -65,7 +65,17 @@ class BubblyExporter:
             dest = self.output_folder / "media" / output_media_name
             dest.parent.mkdir(parents=True, exist_ok=True)
             if str(dest) not in copied_targets:
-                shutil.copy(src, dest)
+                try:
+                    if src.resolve() == dest.resolve():
+                        copied_targets.add(str(dest))
+                        continue
+                except OSError:
+                    pass
+                try:
+                    shutil.copy(src, dest)
+                except shutil.SameFileError:
+                    copied_targets.add(str(dest))
+                    continue
                 copied_targets.add(str(dest))
                 copied_count += 1
 
