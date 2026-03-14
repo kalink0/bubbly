@@ -14,7 +14,6 @@ import sys
 import shutil
 
 from bubbly_launcher import PARSERS, run_with_args
-from input_to_bubbly_gui import CsvToBubblyGui
 
 
 LOG_LEVELS = ["debug", "info", "warning", "error", "critical"]
@@ -445,8 +444,23 @@ class BubblyGui(tk.Tk):
         self._open_path(self.last_output_folder)
 
     def _open_input_to_json(self):
-        input_gui = CsvToBubblyGui()
-        input_gui.mainloop()
+        try:
+            if getattr(sys, "frozen", False):
+                exe_dir = Path(sys.executable).resolve().parent
+                candidates = list(exe_dir.glob("input_to_bubbly_gui*"))
+                if sys.platform.startswith("win"):
+                    candidates = [p for p in candidates if p.suffix.lower() == ".exe"]
+                candidates = [p for p in candidates if p.is_file()]
+                if not candidates:
+                    raise FileNotFoundError(
+                        f"No Input-to-JSON executable found next to {sys.executable}"
+                    )
+                subprocess.Popen([str(candidates[0])])
+            else:
+                script_path = Path(__file__).resolve().parent / "input_to_bubbly_gui.py"
+                subprocess.Popen([sys.executable, str(script_path)])
+        except Exception as exc:
+            messagebox.showerror("Launch failed", f"Could not open Input-to-JSON tool: {exc}")
 
 
 

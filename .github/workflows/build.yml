@@ -102,39 +102,6 @@ jobs:
       - name: Build Linux executable
         run: bash build/build_linux.sh
 
-      - name: Upload Linux CLI artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: bubbly-cli-linux
-          path: |
-            build/dist/linux/bubbly_*
-          retention-days: 1
-
-      - name: Upload Linux Bubbly GUI artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: bubbly-gui-linux
-          path: |
-            build/dist/linux/bubbly_gui_*
-          retention-days: 1
-
-
-      - name: Upload Linux Input-to-JSON GUI artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: input-to-json-gui-linux
-          path: |
-            build/dist/linux/input_to_bubbly_gui_*
-          retention-days: 1
-
-      - name: Upload Linux Input-to-JSON script
-        uses: actions/upload-artifact@v6
-        with:
-          name: input-to-json-script-linux
-          path: |
-            input_to_bubbly_json.py
-          retention-days: 1
-
       - name: Create Linux bundle archive
         run: |
           tar -czf build/dist/linux/bubbly_linux_bundle.tar.gz \
@@ -146,7 +113,7 @@ jobs:
       - name: Upload Linux bundle archive
         uses: actions/upload-artifact@v6
         with:
-          name: bubbly-linux-bundle
+          name: bubbly-linux
           path: |
             build/dist/linux/bubbly_linux_bundle.tar.gz
           retention-days: 1
@@ -168,39 +135,6 @@ jobs:
         shell: pwsh
         run: ./build/build_windows.ps1
 
-      - name: Upload Windows CLI artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: bubbly-cli-windows
-          path: |
-            build/dist/windows/bubbly_*.exe
-          retention-days: 1
-
-      - name: Upload Windows Bubbly GUI artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: bubbly-gui-windows
-          path: |
-            build/dist/windows/bubbly_gui_*.exe
-          retention-days: 1
-
-
-      - name: Upload Windows Input-to-JSON GUI artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: input-to-json-gui-windows
-          path: |
-            build/dist/windows/input_to_bubbly_gui_*.exe
-          retention-days: 1
-
-      - name: Upload Windows Input-to-JSON script
-        uses: actions/upload-artifact@v6
-        with:
-          name: input-to-json-script-windows
-          path: |
-            input_to_bubbly_json.py
-          retention-days: 1
-
       - name: Create Windows bundle archive
         shell: pwsh
         run: |
@@ -216,7 +150,7 @@ jobs:
       - name: Upload Windows bundle archive
         uses: actions/upload-artifact@v6
         with:
-          name: bubbly-windows-bundle
+          name: bubbly-windows
           path: |
             build/dist/windows/bubbly_windows_bundle.zip
           retention-days: 1

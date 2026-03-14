@@ -191,6 +191,8 @@ class CsvToBubblyGui(tk.Tk):
         mapping_pane.pack(fill=tk.BOTH, expand=True)
 
         preview_notebook = ttk.Notebook(mapping_pane)
+        self.preview_notebook = preview_notebook
+        self.preview_notebook.bind("<<NotebookTabChanged>>", self._on_preview_tab_change)
         preview_csv_frame = ttk.Frame(preview_notebook, padding=8)
         preview_ts_frame = ttk.Frame(preview_notebook, padding=8)
         preview_skipped_frame = ttk.Frame(preview_notebook, padding=8)
@@ -233,6 +235,7 @@ class CsvToBubblyGui(tk.Tk):
             combo.grid(row=row_index, column=1, sticky="ew", pady=4)
             combo.set("—")
             combo.bind("<<ComboboxSelected>>", self._on_mapping_change)
+            var.trace_add("write", lambda *_args, field=field: self._on_mapping_var_change(field))
 
             self._mapping_vars[field] = var
             self._mapping_boxes[field] = combo
@@ -501,6 +504,13 @@ class CsvToBubblyGui(tk.Tk):
             self.preview_tree.insert("", tk.END, values=values)
 
     def _on_mapping_change(self, _event):
+        self._update_timestamp_preview()
+
+    def _on_mapping_var_change(self, field):
+        if field == "timestamp":
+            self._update_timestamp_preview()
+
+    def _on_preview_tab_change(self, _event):
         self._update_timestamp_preview()
 
     def _update_timestamp_preview(self):
