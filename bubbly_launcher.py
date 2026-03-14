@@ -180,8 +180,15 @@ def run_with_args(args):
 
 def main():
     """Run the end-to-end launcher flow: parse, export, and log execution."""
-    args = parse_args(PARSERS, banner_printer=print_banner)
-    run_with_args(args)
+    try:
+        args = parse_args(PARSERS, banner_printer=print_banner)
+        run_with_args(args)
+    except SystemExit:
+        raise
+    except Exception as exc:
+        log_path = write_fallback_exception_log(exc, output_base=None)
+        log_fallback_exception(exc, log_path)
+        raise
 
 
 if __name__ == "__main__":
