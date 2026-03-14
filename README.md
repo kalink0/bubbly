@@ -201,6 +201,8 @@ It wraps the existing CLI flow and lets you:
 - Run the export and view logs
 - Open the output folder when done
 
+![Bubbly GUI Launcher](images/example_gui.png)
+
 ## GUI input-to-JSON
 
 Start the input-to-JSON GUI (CSV today, more formats later):
@@ -215,6 +217,8 @@ It provides:
 - CSV preview + timestamp preview
 - Auto-detect for common timestamp formats
 - A skipped-rows tab and optional log file
+
+![Input to Bubbly JSON GUI](images/example_gui_2.png)
 
 ## Executable builds
 
